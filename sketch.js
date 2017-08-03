@@ -165,6 +165,52 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
     }
 }
 
+////////////////
+// Disease Class
+////////////////
+function Disease(seed){
+    this.seed = seed;
+    this.days_incubation = 2;
+    this.days_contagious = 2;
+    this.mortality_rate = 15;
+    this.percent_pop_immune = 10;
+
+    // Maps to mobility. The more severe,
+    // the less somebody can move.
+    // The more severe, the fewer people
+    // on the board who spin. 
+    this.severity = 2;
+
+    // How many 45° increments they turn
+    // when they spin
+    this.turn_segments = 1;
+
+    // Generate values procedurally
+    // Global means there's a certain count
+    // available to the entire game.
+    // When it's not global, then that count
+    // is available to each person
+    this.global_vomit = true;
+    this.vomit_count = 3;
+    
+    this.global_cough = false;
+    this.cough_count = 2;
+
+    this.global_sneeze = false;
+    this.sneeze_count = 1;
+
+    this.global_spit = false;
+    this.spit_count = 1;
+
+    // For each disease, one symptom is unlimited
+    this.unlimited_cough = true;
+    this.unlimited_sneeze = false;
+    this.unlimited_spit = false;
+    this.unlimited_vomit = false;
+}
+
+
+///////////////
 // Sector class
 // This will handle most of the logic associated with 
 // various people infecting others, etc. 
@@ -192,7 +238,9 @@ function Sector(xcoord, ycoord, dimension){
     }
 }
 
+//////////////////
 // UI Button Class
+//////////////////
 function ActionButton(x,y,dim,color,label,actionCallback){
     this.x = x;
     this.y = y;
