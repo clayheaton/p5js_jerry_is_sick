@@ -35,6 +35,7 @@ var img_spit;
 var img_vomit;
 
 var DIRECTIONS = [];
+var DIRECTIONS_LOOKUP = {};
 var DIRECTION_N  = Math.PI * 2;
 var DIRECTION_NW = (Math.PI * 2) - Math.PI/4;
 var DIRECTION_W  = (Math.PI * 2) - Math.PI/2;
@@ -75,6 +76,15 @@ function preload(){
         DIRECTION_S, 
         DIRECTION_SE 
     ]
+
+    DIRECTIONS_LOOKUP[0] = "east";
+    DIRECTIONS_LOOKUP[1] = "northeast";
+    DIRECTIONS_LOOKUP[2] = "north";
+    DIRECTIONS_LOOKUP[3] = "northwest";
+    DIRECTIONS_LOOKUP[4] = "west";
+    DIRECTIONS_LOOKUP[5] = "southwest";
+    DIRECTIONS_LOOKUP[6] = "south";
+    DIRECTIONS_LOOKUP[7] = "southeast";
 }
 
 function setup() {
@@ -182,8 +192,17 @@ function drawUI(){
 }
 
 function triggerVomit(){
-    print("Vomiting");
-    advanceTurn();
+
+    if (selectedSector){
+        secStatus = selectedSector.getDiseaseStatus();
+        if (secStatus == "contagious"){
+            print("Vomiting");
+            selectedSector.vomit();
+            advanceTurn();
+        } else {
+            print("Selected person is not contagious.");
+        }
+    }
 }
 
 function triggerCough(){
@@ -237,6 +256,10 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
             s = new Sector(j,i,this.sector_dimension);
             this.sectors[i].push(s);
         }
+    }
+
+    this.sectorForCoords = function(x,y){
+        return this.sectors[y][x];
     }
 
     this.advanceTurn = function(){
@@ -395,6 +418,9 @@ function Sector(xcoord, ycoord, dimension){
     this.rotation_on_turn = Math.floor(Math.random() * disease.turns_until_rotate) + 1;
     this.dies_from_disease = false;
     this.rotation_indicator = (this.rotation_turn_counter+1)/this.rotation_on_turn;
+    this.coveredWithBarf = false;
+
+    // TODO: Use this.coveredWithBarf to trigger vomiting the next turn
 
     if (Math.random() < disease.percent_pop_immune){
         this.immune = true;
@@ -425,7 +451,84 @@ function Sector(xcoord, ycoord, dimension){
         }
     }
 
+    this.infect = function(barfInvolved){
+        current_status = this.getDiseaseStatus();
+        if (this.immune || current_status == "immune_or_dead"){
+            print("Target is immune or dead.");
+            return;
+        }
+        
+        if (barfInvolved){
+            print("Target infected. Barf involved.");
+            print("Target status: " + current_status);
+            // Infect and change to barf graphic
+            this.coveredWithBarf = true;
 
+            if (current_status == "healthy"){
+                print("Target was healthy.");
+                this.disease_status += 1;
+                this.updateImageUsed();
+            }
+        } else {
+            print("Target infected. No barf involved.");
+            if (current_status == "healthy"){
+                this.disease_status += 1;
+                this.updateImageUsed();
+            }
+        }
+    }
+
+    this.infectWithVomit = function(){
+        this.infect(true);
+    }
+
+    this.coordinatesToAttack = function(){
+        // Returns the first sector in the attack direction
+        // If an attack affects more than one sector, the method
+        // handling the attack should expand the target list
+        // Returns [xcoord,ycoord]
+        current_direction = DIRECTIONS_LOOKUP[this.facing];
+        if(current_direction == "east") {
+            return [this.xcoord+1,this.ycoord];
+        } else if (current_direction == "northeast") {
+            return [this.xcoord+1,this.ycoord-1];
+        } else if (current_direction == "north") {
+            return [this.xcoord,this.ycoord-1];
+        } else if (current_direction == "northwest") {
+            return [this.xcoord-1,this.ycoord-1];
+        } else if (current_direction == "west") {
+            return [this.xcoord-1,this.ycoord];
+        } else if (current_direction == "southwest") {
+            return [this.xcoord-1,this.ycoord+1];
+        } else if (current_direction == "south") {
+            return [this.xcoord,this.ycoord+1];
+        } else if (current_direction == "southeast") {
+            return [this.xcoord+1,this.ycoord+1];
+        }
+    }
+
+    this.vomit = function(){
+        // TODO: Register graphic with the gamegrid
+        target = this.coordinatesToAttack();
+        targetX = target[0];
+        targetY = target[1];
+
+        print("Vomit target: " + target);
+
+        if (targetX >= 0 && targetX <= sectorsWide-1 &&
+            targetY >= 0 && targetY <= sectorsTall-1){
+                // There is a sector. Get it from the gamegrid
+                print("Target is valid");
+                targetSector = gameGrid.sectorForCoords(targetX,targetY);
+                targetSector.infectWithVomit();
+            }
+
+            // Place the graphic
+    }
+
+    this.getDiseaseStatus = function(){
+        return current_status = disease.disease_progression[this.disease_status];
+    }
 
     this.advanceTurn = function(){
         this.advanceDisease();
@@ -436,6 +539,13 @@ function Sector(xcoord, ycoord, dimension){
         // Do we advance the disease?
         current_status = disease.disease_progression[this.disease_status];
         if (current_status != "healthy" && current_status != "immune_or_dead"){
+            // TODO: Decide whether to allow the infected to vomit or they wait until contagious
+            // TODO: Remove player's ability to cause barf covered person to perform another action
+            // until after the barf is complete. Or does the barf consume all actions?
+            if (this.coveredWithBarf && current_status == "contagious") {
+                this.vomit();
+                this.coveredWithBarf = false;
+            }
             this.disease_status += 1;
             this.updateImageUsed();
         }
@@ -445,9 +555,17 @@ function Sector(xcoord, ycoord, dimension){
         // Update the image
         current_status = disease.disease_progression[this.disease_status]
         if (current_status == "infected"){
-            this.img = img_state_infected;
+            if (this.coveredWithBarf){
+                this.img = img_state_infected_vomit;
+            } else {
+                this.img = img_state_infected;
+            }
         } else if (current_status == "contagious") {
-            this.img = img_state_contagious;
+            if (this.coveredWithBarf){
+                this.img = img_state_contagious_vomit;
+            } else {
+                this.img = img_state_contagious;
+            }
         } else if (current_status == "immune_or_dead") {
             if (this.dies_from_disease) {
                 this.img = img_state_dead;
