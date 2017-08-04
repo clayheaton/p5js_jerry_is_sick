@@ -1,6 +1,10 @@
 var offsetX = 0;
 var offsetY = 0;
 
+var adjustedMouseX = 0;
+var adjustedMouseY = 0;
+var mouseJustDragged = false;
+
 var gameGridWidth = 100;
 var gameGridHeight = 100;
 
@@ -15,6 +19,7 @@ var vomitButton, coughButton, sneezeButton, spitButton, passButton;
 
 var gameGrid;
 var selectedSector = null;
+var disease;
 
 function preload(){
     randomSeed(1);
@@ -24,6 +29,9 @@ function setup() {
     var canvas = createCanvas(400,600);
     canvas.parent('canvasHolder');
     background("#122B40");
+
+    // Generate the disease
+    disease = new Disease(123);
 
     // Create the UI Buttons.
     passButton = new ActionButton(50,height-uiHeight/2,50,100,"Pass",triggerPass);
@@ -45,14 +53,26 @@ function setup() {
 }
 
 function draw() {
+  // If we drag the map around, we need to know the 
+  // adjusted mouse position so that we can highlight
+  // and select the proper sectors
+  calculateAdjustedMousePosition();
+
   background("#122B40");
+  
+  push();
+  translate(offsetX,offsetY);
   gameGrid.draw();
+  pop();
+
   drawUI();
 }
 
 function mouseClicked(){
   // If a UI button catches the mouse click, return.
   for (var i = 0; i < actionButtons.length; i++){
+      // Don't use adjustedMouseX because the UI doesn't move
+      // in the same frame as the game field.
         if (actionButtons[i].catchesClick(mouseX,mouseY)){
             actionButtons[i].triggerAction();
             return;
@@ -60,8 +80,24 @@ function mouseClicked(){
   }
 
   // The UI didn't catch it so try to select a sector
-  gameGrid.selectSector(mouseX,mouseY);
+  if (!mouseJustDragged) {
+        gameGrid.selectSector();
+  } else {
+      mouseJustDragged = false;
+  }
 
+}
+
+function calculateAdjustedMousePosition(){
+    adjustedMouseX = mouseX - offsetX;
+    adjustedMouseY = mouseY - offsetY;
+}
+
+function mouseDragged(){
+    offsetX = offsetX + (mouseX - pmouseX);
+    offsetY = offsetY + (mouseY - pmouseY);
+    mouseJustDragged = true;
+    return false;
 }
 
 function drawUI(){
@@ -101,7 +137,11 @@ function triggerPass(){
     print("Passing Turn");
 }
 
+
+
+//////////////////
 // Game Grid Class
+//////////////////
 function GameGrid(sector_dimension,sectors_wide,sectors_tall){
     this.sector_dimension = sector_dimension;
     this.sectors_wide = sectors_wide;
@@ -117,8 +157,12 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
     }
 
     this.highlightSector = function(){
-        xpos = parseInt(mouseX / this.sector_dimension);
-        ypos = parseInt(mouseY / this.sector_dimension);
+        xpos = parseInt(adjustedMouseX / this.sector_dimension);
+        ypos = parseInt(adjustedMouseY / this.sector_dimension);
+        if (xpos < 0 || xpos > this.sectors_wide-1 ||
+            ypos < 0 || ypos > this.sectors_wide-1){
+                return;
+            }
         this.sectors[ypos][xpos].isUnderMousePointer = true;
     }
 
@@ -138,14 +182,18 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
         }
     }
 
-    this.selectSector = function(mouseX,mouseY){
+    this.selectSector = function(){
         // Don't select a sector if we're hovering over the UI.
         if (mouseY >= height - uiHeight){
             return;
         }
         this.markSectorsNotSelected();
-        xpos = parseInt(mouseX / this.sector_dimension);
-        ypos = parseInt(mouseY / this.sector_dimension);
+        xpos = parseInt(adjustedMouseX / this.sector_dimension);
+        ypos = parseInt(adjustedMouseY / this.sector_dimension);
+        if (xpos < 0 || xpos > this.sectors_wide-1 ||
+            ypos < 0 || ypos > this.sectors_wide-1){
+                return;
+            }
         this.sectors[ypos][xpos].isSelected = true;
         selectedSector = this.sectors[ypos][xpos];
     }
@@ -159,8 +207,10 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
     }
 
     this.draw = function(){
-        this.markSectorsNotHighlighted();
-        this.highlightSector();
+        if(!mouseIsPressed){
+            this.markSectorsNotHighlighted();
+            this.highlightSector();
+        }
         this.drawGrid();
     }
 }
@@ -172,18 +222,19 @@ function Disease(seed){
     this.seed = seed;
     this.days_incubation = 2;
     this.days_contagious = 2;
-    this.mortality_rate = 15;
+    this.mortality_rate = 0.15;
     this.percent_pop_immune = 10;
 
     // Maps to mobility. The more severe,
     // the less somebody can move.
     // The more severe, the fewer people
     // on the board who spin. 
-    this.severity = 2;
+    // Another name: this.rotation_rate
+    this.severity = 0.6;
 
     // How many 45° increments they turn
     // when they spin
-    this.turn_segments = 1;
+    this.turn_segments = 3;
 
     // Generate values procedurally
     // Global means there's a certain count
@@ -223,7 +274,41 @@ function Sector(xcoord, ycoord, dimension){
     this.x = this.xcoord * this.dimension;
     this.y = this.ycoord * this.dimension;
 
+    // Use the current disease to set some parameters for
+    // this sector
+    this.remaining_coughs = 0;
+    this.remaining_sneezes = 0;
+    this.remaining_spits = 0;
+    this.remaining_vomits = 0;
+    this.rotates = false;
+    this.segments_to_rotate = 0;
+    this.dies_from_disease = false;
+
+    if (!disease.global_cough) {
+        this.remaining_coughs = disease.cough_count;
+    }
+    if (!disease.global_sneeze) {
+        this.remaining_sneezes = disease.sneeze_count;
+    }
+    if (!disease.global_spit) {
+        this.remaining_spits = disease.spit_count;
+    }
+    if (!disease.global_vomit) {
+        this.remaining_vomits = disease.vomit_count;
+    }
+    if (Math.random() > disease.severity) {
+        this.rotates = true;
+        this.segments_to_rotate = map(Math.random(),0,1,1,disease.segments_to_rotate);
+    }
+    if (Math.random() < disease.mortality_rate) {
+        this.dies_from_disease = true;
+    }
+
     this.draw = function(){
+        stroke(80);
+        noFill();
+        rect(this.x,this.y,this.dimension,this.dimension);
+        noFill();
         if (this.isSelected) {
             noStroke();
             fill("#5C727C");
