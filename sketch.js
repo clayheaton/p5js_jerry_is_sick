@@ -353,6 +353,7 @@ function Sector(xcoord, ycoord, dimension){
     this.rotation_turn_counter = 0;
     this.rotation_on_turn = Math.floor(Math.random() * disease.turns_until_rotate) + 1;
     this.dies_from_disease = false;
+    this.rotation_indicator = (this.rotation_turn_counter+1)/this.rotation_on_turn;
 
     if (Math.random() < disease.percent_pop_immune){
         this.immune = true;
@@ -373,6 +374,9 @@ function Sector(xcoord, ycoord, dimension){
         }
         if (Math.random() > disease.severity) {
             this.rotates = true;
+        } else {
+            // Don't show a bar for rotation
+            this.rotation_indicator = 0;
         }
         if (Math.random() < disease.mortality_rate) {
             this.dies_from_disease = true;
@@ -389,6 +393,8 @@ function Sector(xcoord, ycoord, dimension){
                     this.facing = this.facing - DIRECTIONS.length;
                 }
             }
+            // Set the turn indicator
+            this.rotation_indicator = (this.rotation_turn_counter+1)/this.rotation_on_turn;
         }
     }
 
@@ -419,6 +425,8 @@ function Sector(xcoord, ycoord, dimension){
             rect(this.x,this.y,this.dimension,this.dimension);
             pop();
         }
+
+        // Draw the person
         picScale = 2.2;
         imageMode(CENTER);
         push();
@@ -426,6 +434,19 @@ function Sector(xcoord, ycoord, dimension){
         rotate(DIRECTIONS[this.facing]);
         image(this.img,0,0,this.img.width/2.2,this.img.height/2.2);
         pop();
+
+        // Draw the rotation turn indicator
+        if(this.rotates){
+            push();
+            translate(offsetX,offsetY);
+            noStroke();
+            fill(0);
+            if (this.rotation_indicator == 1){
+                fill("#5BE65D");
+            }
+            rect(this.x,this.y+dimension - 2,this.dimension*this.rotation_indicator,2);
+            pop();
+        }
     }
 }
 
