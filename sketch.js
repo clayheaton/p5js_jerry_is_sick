@@ -53,6 +53,9 @@ var STATE_DEAD       = 4;
 
 var infected_chosen = false;
 
+var turn_count = 0;
+var score = 0;
+
 function preload(){
     img_state_default = loadImage("art/state_default@2x.png");
     img_state_infected = loadImage("art/state_infected@2x.png");
@@ -184,6 +187,13 @@ function drawUI(){
 
     // UI bar at the top for score and turn counters
     rect(1,1,width-2,20);
+    textAlign(LEFT);
+    noStroke();
+    fill(0);
+    text("Turn " + turn_count, 10,15);
+
+    textAlign(RIGHT);
+    text("Score " + score, width-10,15);
 
     // Draw the action buttons
     if (infected_chosen){
@@ -252,6 +262,7 @@ function triggerInfection(){
 }
 
 function advanceTurn(){
+    turn_count += 1;
     gameGrid.advanceTurn();
 }
 
@@ -481,7 +492,7 @@ function Sector(xcoord, ycoord, dimension){
             print("Target status: " + current_status);
             // Infect and change to barf graphic
             this.coveredWithBarf = true;
-
+            score += 5;
             if (current_status == "healthy"){
                 print("Target was healthy.");
                 this.disease_status += 1;
