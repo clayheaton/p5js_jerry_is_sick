@@ -224,7 +224,7 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
         xpos = parseInt(adjustedMouseX / this.sector_dimension);
         ypos = parseInt(adjustedMouseY / this.sector_dimension);
         if (xpos < 0 || xpos > this.sectors_wide-1 ||
-            ypos < 0 || ypos > this.sectors_wide-1){
+            ypos < 0 || ypos > this.sectors_tall-1){
                 return;
             }
         this.sectors[ypos][xpos].isUnderMousePointer = true;
@@ -254,8 +254,9 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
         this.markSectorsNotSelected();
         xpos = parseInt(adjustedMouseX / this.sector_dimension);
         ypos = parseInt(adjustedMouseY / this.sector_dimension);
+
         if (xpos < 0 || xpos > this.sectors_wide-1 ||
-            ypos < 0 || ypos > this.sectors_wide-1){
+            ypos < 0 || ypos > this.sectors_tall-1){
                 return;
             }
         this.sectors[ypos][xpos].isSelected = true;
@@ -400,7 +401,7 @@ function Sector(xcoord, ycoord, dimension){
 
     this.draw = function(){
         // Draw the actual grid
-        stroke(80);
+        stroke(220);
         //noFill();
         fill(255);
         push();
@@ -411,7 +412,7 @@ function Sector(xcoord, ycoord, dimension){
 
         if (this.isSelected) {
             noStroke();
-            fill("#5C727C");
+            fill(150); // fill("#5C727C");
             push();
             translate(offsetX,offsetY);
             rect(this.x,this.y,this.dimension,this.dimension);
@@ -419,7 +420,7 @@ function Sector(xcoord, ycoord, dimension){
         }
         if (this.isUnderMousePointer && mouseY < height - uiHeight){
             noStroke();
-            fill("#334B5B");
+            fill(200); // fill("#334B5B");
             push();
             translate(offsetX,offsetY);
             rect(this.x,this.y,this.dimension,this.dimension);
@@ -435,16 +436,37 @@ function Sector(xcoord, ycoord, dimension){
         image(this.img,0,0,this.img.width/2.2,this.img.height/2.2);
         pop();
 
+        this.drawRotationIndicator();
+    }
+
+    this.drawRotationIndicator = function(){
         // Draw the rotation turn indicator
+        // TODO: Convert this to an arc()
+        // if(this.rotates){
+        //     push();
+        //     translate(offsetX,offsetY);
+        //     noStroke();
+        //     fill(0);
+        //     if (this.rotation_indicator == 1){
+        //         fill("#5BE65D");
+        //     }
+        //     rect(this.x,this.y+this.dimension - 2,this.dimension*this.rotation_indicator,2);
+        //     pop();
+        // }
+
         if(this.rotates){
             push();
             translate(offsetX,offsetY);
-            noStroke();
+            stroke(0);
             fill(0);
             if (this.rotation_indicator == 1){
+                stroke("#5BE65D");
                 fill("#5BE65D");
             }
-            rect(this.x,this.y+dimension - 2,this.dimension*this.rotation_indicator,2);
+            arc(this.x+10, this.y+this.dimension - 10, 15, 15, 0, Math.PI*2*this.rotation_indicator,true);
+            noStroke();
+            fill(255);
+            ellipse(this.x+10, this.y+this.dimension - 10, 10, 10);
             pop();
         }
     }
