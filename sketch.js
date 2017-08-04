@@ -8,8 +8,8 @@ var mouseJustDragged = false;
 var gameGridWidth = 100;
 var gameGridHeight = 100;
 
-var sectorsWide = 4;
-var sectorsTall = 5;
+var sectorsWide = 10;
+var sectorsTall = 10;
 
 var sectors = [];
 var uiHeight = 76;
@@ -132,27 +132,29 @@ function draw() {
 
 function mouseClicked(){
   // If a UI button catches the mouse click, return.
-  if (infected_chosen){
-    for (var i = 0; i < actionButtons.length; i++){
-        // Don't use adjustedMouseX because the UI doesn't move
-        // in the same frame as the game field.
-            if (actionButtons[i].catchesClick(mouseX,mouseY)){
-                actionButtons[i].triggerAction();
-                return;
-            }
+  if (intersectsUI(mouseX,mouseY)){
+    if (infected_chosen){
+        for (var i = 0; i < actionButtons.length; i++){
+            // Don't use adjustedMouseX because the UI doesn't move
+            // in the same frame as the game field.
+                if (actionButtons[i].catchesClick(mouseX,mouseY)){
+                    actionButtons[i].triggerAction();
+                    return;
+                }
+        }
+    } else {
+        if (chooseInfectedButton.catchesClick(mouseX,mouseY)){
+            chooseInfectedButton.triggerAction();
+            return;
+        }
     }
   } else {
-      if (chooseInfectedButton.catchesClick(mouseX,mouseY)){
-          chooseInfectedButton.triggerAction();
-          return;
-      }
-  }
-
-  // The UI didn't catch it so try to select a sector
-  if (!mouseJustDragged) {
-        gameGrid.selectSector();
-  } else {
-      mouseJustDragged = false;
+    // The UI didn't catch it so try to select a sector
+    if (!mouseJustDragged) {
+            gameGrid.selectSector();
+    } else {
+        mouseJustDragged = false;
+    }
   }
 
 }
@@ -180,6 +182,9 @@ function drawUI(){
     noStroke();
     rect(1, height - uiHeight - 1, width-2, uiHeight);
 
+    // UI bar at the top for score and turn counters
+    rect(1,1,width-2,20);
+
     // Draw the action buttons
     if (infected_chosen){
         for(var i = 0; i < actionButtons.length; i++){
@@ -189,6 +194,16 @@ function drawUI(){
         // Player needs to choose the infected person
             chooseInfectedButton.draw();
     }
+}
+
+function intersectsUI() {
+    // Return boolean if a mouseX and mouseY intersect with the UI
+    if (mouseY > height - uiHeight - 1 ||
+        mouseY < 20){
+            return true;
+        } else {
+            return false;
+        }
 }
 
 function triggerVomit(){
@@ -272,6 +287,9 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
     }
 
     this.highlightSector = function(){
+        if (intersectsUI(mouseX,mouseY)){
+            return;
+        }
         xpos = parseInt(adjustedMouseX / this.sector_dimension);
         ypos = parseInt(adjustedMouseY / this.sector_dimension);
         if (xpos < 0 || xpos > this.sectors_wide-1 ||
