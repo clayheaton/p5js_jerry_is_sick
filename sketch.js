@@ -285,8 +285,8 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
 ////////////////
 function Disease(seed){
     this.seed = seed;
-    this.days_incubation = 2;
-    this.days_contagious = 2;
+    this.days_incubation = 4;
+    this.days_contagious = 7;
     this.mortality_rate = 0.15;
     this.percent_pop_immune = 0.1;
 
@@ -322,6 +322,17 @@ function Disease(seed){
     this.unlimited_sneeze = false;
     this.unlimited_spit = false;
     this.unlimited_vomit = false;
+
+    // Store disease progression in an array that we can walk
+    // for each person
+    this.disease_progression = ["healthy"];
+    for (var i = 0; i < this.days_incubation; i++){
+        this.disease_progression.push("infected");
+    }
+    for (var i = 0; i < this.days_contagious; i++){
+        this.disease_progression.push("contagious");
+    }
+    this.disease_progression.push("immune_or_dead");
 }
 
 
@@ -345,6 +356,7 @@ function Sector(xcoord, ycoord, dimension){
     // Use the current disease to set some parameters for
     // this sector
     this.immune = false;
+    this.disease_status = 1;
     this.remaining_coughs = 0;
     this.remaining_sneezes = 0;
     this.remaining_spits = 0;
@@ -359,6 +371,7 @@ function Sector(xcoord, ycoord, dimension){
     if (Math.random() < disease.percent_pop_immune){
         this.immune = true;
         this.img = img_state_immune;
+        this.disease_status = disease.disease_progression.length - 1;
     } else {
         // This sector is not immune
         if (!disease.global_cough) {
@@ -384,7 +397,38 @@ function Sector(xcoord, ycoord, dimension){
         }
     }
 
+
+
     this.advanceTurn = function(){
+        this.advanceDisease();
+        this.rotatePerson();
+    }
+
+    this.advanceDisease = function(){
+        // Do we advance the disease?
+        current_status = disease.disease_progression[this.disease_status];
+        if (current_status != "healthy" && current_status != "immune_or_dead"){
+            this.disease_status += 1;
+
+            // Update the image
+            current_status = disease.disease_progression[this.disease_status]
+            if (current_status == "infected"){
+                this.img = img_state_infected;
+            } else if (current_status == "contagious") {
+                this.img = img_state_contagious;
+            } else if (current_status == "immune_or_dead") {
+                if (this.dies_from_disease) {
+                    this.img = img_state_dead;
+                } else {
+                    this.img = img_state_immune;
+                }
+                // Stop rotating when dead or immune
+                this.rotates = false;
+            }
+        }
+    }
+
+    this.rotatePerson = function() {
         if (this.rotates){
             this.rotation_turn_counter += 1;
             if (this.rotation_turn_counter == this.rotation_on_turn){
@@ -402,7 +446,6 @@ function Sector(xcoord, ycoord, dimension){
     this.draw = function(){
         // Draw the actual grid
         stroke(220);
-        //noFill();
         fill(255);
         push();
         translate(offsetX,offsetY);
@@ -441,32 +484,22 @@ function Sector(xcoord, ycoord, dimension){
 
     this.drawRotationIndicator = function(){
         // Draw the rotation turn indicator
-        // TODO: Convert this to an arc()
-        // if(this.rotates){
-        //     push();
-        //     translate(offsetX,offsetY);
-        //     noStroke();
-        //     fill(0);
-        //     if (this.rotation_indicator == 1){
-        //         fill("#5BE65D");
-        //     }
-        //     rect(this.x,this.y+this.dimension - 2,this.dimension*this.rotation_indicator,2);
-        //     pop();
-        // }
 
         if(this.rotates){
             push();
             translate(offsetX,offsetY);
             stroke(0);
-            fill(0);
+            strokeWeight(3);
+            noFill();
             if (this.rotation_indicator == 1){
                 stroke("#5BE65D");
-                fill("#5BE65D");
             }
             arc(this.x+10, this.y+this.dimension - 10, 15, 15, 0, Math.PI*2*this.rotation_indicator,true);
+            
+            // Text shows how frequently the person turns
             noStroke();
-            fill(255);
-            ellipse(this.x+10, this.y+this.dimension - 10, 10, 10);
+            fill(0);
+            text(this.rotation_on_turn,this.x+10, this.y+this.dimension - 5.5)
             pop();
         }
     }
