@@ -8,8 +8,8 @@ var mouseJustDragged = false;
 var gameGridWidth = 100;
 var gameGridHeight = 100;
 
-var sectorsWide = 10;
-var sectorsTall = 10;
+var sectorsWide = 4;
+var sectorsTall = 5;
 
 var sectors = [];
 var uiHeight = 76;
@@ -33,6 +33,22 @@ var img_sneeze;
 var img_spit;
 var img_vomit;
 
+var DIRECTIONS = [];
+var DIRECTION_N  = Math.PI * 2;
+var DIRECTION_NW = (Math.PI * 2) - Math.PI/4;
+var DIRECTION_W  = (Math.PI * 2) - Math.PI/2;
+var DIRECTION_SW = (Math.PI * 2) - Math.PI/2 - Math.PI/4;
+var DIRECTION_S  = Math.PI;
+var DIRECTION_SE = Math.PI - Math.PI/4;
+var DIRECTION_E  = Math.PI/2;
+var DIRECTION_NE = Math.PI/4;
+
+var STATE_HEALTHY    = 0;
+var STATE_INFECTED   = 1;
+var STATE_CONTAGIOUS = 2;
+var STATE_IMMUNE     = 3;
+var STATE_DEAD       = 4;
+
 function preload(){
     img_state_default = loadImage("art/state_default@2x.png");
     img_state_infected = loadImage("art/state_infected@2x.png");
@@ -45,6 +61,17 @@ function preload(){
     img_sneeze = loadImage("art/sneeze@2x.png");
     img_spit = loadImage("art/spit@2x.png");
     img_vomit = loadImage("art/vomit@2x.png");
+
+    DIRECTIONS = [
+        DIRECTION_E,
+        DIRECTION_NE,
+        DIRECTION_N, 
+        DIRECTION_NW,
+        DIRECTION_W, 
+        DIRECTION_SW,
+        DIRECTION_S, 
+        DIRECTION_SE 
+    ]
 }
 
 function setup() {
@@ -69,8 +96,8 @@ function setup() {
     actionButtons.push(spitButton);
     actionButtons.push(vomitButton);
 
-    gameGrid = new GameGrid(100,10,10);
-
+    gameGrid = new GameGrid(100,sectorsWide,sectorsTall);
+    angleMode(RADIANS);
     drawUI();
 }
 
@@ -80,12 +107,10 @@ function draw() {
   // and select the proper sectors
   calculateAdjustedMousePosition();
 
-  background("#122B40");
+  // background("#122B40"); // Dark blue
+  background(220);
   
-  push();
-  translate(offsetX,offsetY);
   gameGrid.draw();
-  pop();
 
   drawUI();
 }
@@ -141,24 +166,32 @@ function drawUI(){
 
 function triggerVomit(){
     print("Vomiting");
+    advanceTurn();
 }
 
 function triggerCough(){
     print("Coughing");
+    advanceTurn();
 }
 
 function triggerSneeze(){
     print("Sneezing");
+    advanceTurn();
 }
 
 function triggerSpit(){
     print("Spitting");
+    advanceTurn();
 }
 
 function triggerPass(){
     print("Passing Turn");
+    advanceTurn();
 }
 
+function advanceTurn(){
+    gameGrid.advanceTurn();
+}
 
 
 //////////////////
@@ -175,6 +208,15 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
         for (var j = 0; j < this.sectors_wide; j++){
             s = new Sector(j,i,this.sector_dimension);
             this.sectors[i].push(s);
+        }
+    }
+
+    this.advanceTurn = function(){
+        // Tell sectors to advance turn
+        for (var i = 0; i < this.sectors_tall; i++) {
+            for (var j = 0; j < this.sectors_wide; j++){
+                s = this.sectors[i][j].advanceTurn();
+            }
         }
     }
 
@@ -254,9 +296,8 @@ function Disease(seed){
     // Another name: this.rotation_rate
     this.severity = 0.6;
 
-    // How many 45° increments they turn
-    // when they spin
-    this.turn_segments = 3;
+    // How max of how many turns until a rotation occurs
+    this.turns_until_rotate = 3;
 
     // Generate values procedurally
     // Global means there's a certain count
@@ -298,6 +339,7 @@ function Sector(xcoord, ycoord, dimension){
     this.centerX = this.x + this.dimension/2;
     this.centerY = this.y + this.dimension/2;
     this.img = img_state_default;
+    this.facing = Math.floor(Math.random()*DIRECTIONS.length);
 
     // Use the current disease to set some parameters for
     // this sector
@@ -307,7 +349,9 @@ function Sector(xcoord, ycoord, dimension){
     this.remaining_spits = 0;
     this.remaining_vomits = 0;
     this.rotates = false;
-    this.segments_to_rotate = 0;
+    this.segments_to_rotate = 1;
+    this.rotation_turn_counter = 0;
+    this.rotation_on_turn = Math.floor(Math.random() * disease.turns_until_rotate) + 1;
     this.dies_from_disease = false;
 
     if (Math.random() < disease.percent_pop_immune){
@@ -329,31 +373,59 @@ function Sector(xcoord, ycoord, dimension){
         }
         if (Math.random() > disease.severity) {
             this.rotates = true;
-            this.segments_to_rotate = map(Math.random(),0,1,1,disease.segments_to_rotate);
         }
         if (Math.random() < disease.mortality_rate) {
             this.dies_from_disease = true;
         }
     }
 
+    this.advanceTurn = function(){
+        if (this.rotates){
+            this.rotation_turn_counter += 1;
+            if (this.rotation_turn_counter == this.rotation_on_turn){
+                this.rotation_turn_counter = 0;
+                this.facing += this.segments_to_rotate;
+                if (this.facing >= DIRECTIONS.length) {
+                    this.facing = this.facing - DIRECTIONS.length;
+                }
+            }
+        }
+    }
+
     this.draw = function(){
+        // Draw the actual grid
         stroke(80);
-        noFill();
+        //noFill();
+        fill(255);
+        push();
+        translate(offsetX,offsetY);
         rect(this.x,this.y,this.dimension,this.dimension);
+        pop();
         noFill();
+
         if (this.isSelected) {
             noStroke();
             fill("#5C727C");
+            push();
+            translate(offsetX,offsetY);
             rect(this.x,this.y,this.dimension,this.dimension);
+            pop();
         }
         if (this.isUnderMousePointer && mouseY < height - uiHeight){
             noStroke();
             fill("#334B5B");
+            push();
+            translate(offsetX,offsetY);
             rect(this.x,this.y,this.dimension,this.dimension);
+            pop();
         }
         picScale = 2.2;
         imageMode(CENTER);
-        image(this.img,this.centerX,this.centerY,this.img.width/2.2,this.img.height/2.2);
+        push();
+        translate(offsetX + this.centerX,offsetY + this.centerY);
+        rotate(DIRECTIONS[this.facing]);
+        image(this.img,0,0,this.img.width/2.2,this.img.height/2.2);
+        pop();
     }
 }
 
