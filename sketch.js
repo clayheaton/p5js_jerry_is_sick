@@ -16,6 +16,7 @@ var uiHeight = 76;
 
 var actionButtons = [];
 var vomitButton, coughButton, sneezeButton, spitButton, passButton;
+var chooseInfectedButton;
 
 var gameGrid;
 var selectedSector = null;
@@ -48,6 +49,8 @@ var STATE_INFECTED   = 1;
 var STATE_CONTAGIOUS = 2;
 var STATE_IMMUNE     = 3;
 var STATE_DEAD       = 4;
+
+var infected_chosen = false;
 
 function preload(){
     img_state_default = loadImage("art/state_default@2x.png");
@@ -88,6 +91,8 @@ function setup() {
     sneezeButton = new ActionButton(200,height-uiHeight/2,50,"#56B770","Sneeze",triggerSneeze);
     spitButton = new ActionButton(275,height-uiHeight/2,50,"#7C789D","Spit",triggerSpit);
     vomitButton = new ActionButton(350,height-uiHeight/2,50,"#E51870","Vomit",triggerVomit);
+
+    chooseInfectedButton = new ActionButton(200,height-uiHeight/2,50,"#A61600","Infect",triggerInfection);
     
 
     actionButtons.push(passButton);
@@ -117,13 +122,20 @@ function draw() {
 
 function mouseClicked(){
   // If a UI button catches the mouse click, return.
-  for (var i = 0; i < actionButtons.length; i++){
-      // Don't use adjustedMouseX because the UI doesn't move
-      // in the same frame as the game field.
-        if (actionButtons[i].catchesClick(mouseX,mouseY)){
-            actionButtons[i].triggerAction();
-            return;
-        }
+  if (infected_chosen){
+    for (var i = 0; i < actionButtons.length; i++){
+        // Don't use adjustedMouseX because the UI doesn't move
+        // in the same frame as the game field.
+            if (actionButtons[i].catchesClick(mouseX,mouseY)){
+                actionButtons[i].triggerAction();
+                return;
+            }
+    }
+  } else {
+      if (chooseInfectedButton.catchesClick(mouseX,mouseY)){
+          chooseInfectedButton.triggerAction();
+          return;
+      }
   }
 
   // The UI didn't catch it so try to select a sector
@@ -159,8 +171,13 @@ function drawUI(){
     rect(1, height - uiHeight - 1, width-2, uiHeight);
 
     // Draw the action buttons
-    for(var i = 0; i < actionButtons.length; i++){
-        actionButtons[i].draw();
+    if (infected_chosen){
+        for(var i = 0; i < actionButtons.length; i++){
+            actionButtons[i].draw();
+        }
+    } else {
+        // Player needs to choose the infected person
+            chooseInfectedButton.draw();
     }
 }
 
@@ -187,6 +204,17 @@ function triggerSpit(){
 function triggerPass(){
     print("Passing Turn");
     advanceTurn();
+}
+
+function triggerInfection(){
+    if (selectedSector){
+        print("Initial Infection");
+        infected_chosen = true;
+        selectedSector.disease_status = 1;
+        selectedSector.updateImageUsed();
+    } else {
+        print("Select a person to infect.");
+    }
 }
 
 function advanceTurn(){
@@ -356,7 +384,7 @@ function Sector(xcoord, ycoord, dimension){
     // Use the current disease to set some parameters for
     // this sector
     this.immune = false;
-    this.disease_status = 1;
+    this.disease_status = 0; // Everybody starts healthy. Player picks first infected.
     this.remaining_coughs = 0;
     this.remaining_sneezes = 0;
     this.remaining_spits = 0;
@@ -409,22 +437,25 @@ function Sector(xcoord, ycoord, dimension){
         current_status = disease.disease_progression[this.disease_status];
         if (current_status != "healthy" && current_status != "immune_or_dead"){
             this.disease_status += 1;
+            this.updateImageUsed();
+        }
+    }
 
-            // Update the image
-            current_status = disease.disease_progression[this.disease_status]
-            if (current_status == "infected"){
-                this.img = img_state_infected;
-            } else if (current_status == "contagious") {
-                this.img = img_state_contagious;
-            } else if (current_status == "immune_or_dead") {
-                if (this.dies_from_disease) {
-                    this.img = img_state_dead;
-                } else {
-                    this.img = img_state_immune;
-                }
-                // Stop rotating when dead or immune
-                this.rotates = false;
+    this.updateImageUsed = function(){
+        // Update the image
+        current_status = disease.disease_progression[this.disease_status]
+        if (current_status == "infected"){
+            this.img = img_state_infected;
+        } else if (current_status == "contagious") {
+            this.img = img_state_contagious;
+        } else if (current_status == "immune_or_dead") {
+            if (this.dies_from_disease) {
+                this.img = img_state_dead;
+            } else {
+                this.img = img_state_immune;
             }
+            // Stop rotating when dead or immune
+            this.rotates = false;
         }
     }
 
@@ -536,7 +567,11 @@ function ActionButton(x,y,dim,color,label,actionCallback){
     }
 
     this.draw = function(){
-        fill(this.color);
+        if (selectedSector){
+            fill(this.color);
+        } else {
+            fill(128);
+        }
         ellipseMode(CENTER);
         ellipse(this.x,this.y,this.dim,this.dim);
         fill(255);
