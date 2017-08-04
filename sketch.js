@@ -21,8 +21,30 @@ var gameGrid;
 var selectedSector = null;
 var disease;
 
+var img_state_default;
+var img_state_infected;
+var img_state_infected_vomit;
+var img_state_contagious;
+var img_state_contagious_vomit;
+var img_state_immune;
+var img_state_dead;
+var img_cough;
+var img_sneeze;
+var img_spit;
+var img_vomit;
+
 function preload(){
-    randomSeed(1);
+    img_state_default = loadImage("art/state_default@2x.png");
+    img_state_infected = loadImage("art/state_infected@2x.png");
+    img_state_infected_vomit = loadImage("art/state_infected_vomit@2x.png");
+    img_state_contagious = loadImage("art/state_contagious@2x.png");
+    img_state_contagious_vomit = loadImage("art/state_contagious_vomit@2x.png");
+    img_state_dead = loadImage("art/state_dead@2x.png");
+    img_state_immune = loadImage("art/state_immune@2x.png");
+    img_cough = loadImage("art/cough@2x.png");
+    img_sneeze = loadImage("art/sneeze@2x.png");
+    img_spit = loadImage("art/spit@2x.png");
+    img_vomit = loadImage("art/vomit@2x.png");
 }
 
 function setup() {
@@ -223,7 +245,7 @@ function Disease(seed){
     this.days_incubation = 2;
     this.days_contagious = 2;
     this.mortality_rate = 0.15;
-    this.percent_pop_immune = 10;
+    this.percent_pop_immune = 0.1;
 
     // Maps to mobility. The more severe,
     // the less somebody can move.
@@ -273,9 +295,13 @@ function Sector(xcoord, ycoord, dimension){
     this.ycoord = ycoord;
     this.x = this.xcoord * this.dimension;
     this.y = this.ycoord * this.dimension;
+    this.centerX = this.x + this.dimension/2;
+    this.centerY = this.y + this.dimension/2;
+    this.img = img_state_default;
 
     // Use the current disease to set some parameters for
     // this sector
+    this.immune = false;
     this.remaining_coughs = 0;
     this.remaining_sneezes = 0;
     this.remaining_spits = 0;
@@ -284,24 +310,30 @@ function Sector(xcoord, ycoord, dimension){
     this.segments_to_rotate = 0;
     this.dies_from_disease = false;
 
-    if (!disease.global_cough) {
-        this.remaining_coughs = disease.cough_count;
-    }
-    if (!disease.global_sneeze) {
-        this.remaining_sneezes = disease.sneeze_count;
-    }
-    if (!disease.global_spit) {
-        this.remaining_spits = disease.spit_count;
-    }
-    if (!disease.global_vomit) {
-        this.remaining_vomits = disease.vomit_count;
-    }
-    if (Math.random() > disease.severity) {
-        this.rotates = true;
-        this.segments_to_rotate = map(Math.random(),0,1,1,disease.segments_to_rotate);
-    }
-    if (Math.random() < disease.mortality_rate) {
-        this.dies_from_disease = true;
+    if (Math.random() < disease.percent_pop_immune){
+        this.immune = true;
+        this.img = img_state_immune;
+    } else {
+        // This sector is not immune
+        if (!disease.global_cough) {
+            this.remaining_coughs = disease.cough_count;
+        }
+        if (!disease.global_sneeze) {
+            this.remaining_sneezes = disease.sneeze_count;
+        }
+        if (!disease.global_spit) {
+            this.remaining_spits = disease.spit_count;
+        }
+        if (!disease.global_vomit) {
+            this.remaining_vomits = disease.vomit_count;
+        }
+        if (Math.random() > disease.severity) {
+            this.rotates = true;
+            this.segments_to_rotate = map(Math.random(),0,1,1,disease.segments_to_rotate);
+        }
+        if (Math.random() < disease.mortality_rate) {
+            this.dies_from_disease = true;
+        }
     }
 
     this.draw = function(){
@@ -313,13 +345,15 @@ function Sector(xcoord, ycoord, dimension){
             noStroke();
             fill("#5C727C");
             rect(this.x,this.y,this.dimension,this.dimension);
-            return;
         }
         if (this.isUnderMousePointer && mouseY < height - uiHeight){
             noStroke();
             fill("#334B5B");
             rect(this.x,this.y,this.dimension,this.dimension);
         }
+        picScale = 2.2;
+        imageMode(CENTER);
+        image(this.img,this.centerX,this.centerY,this.img.width/2.2,this.img.height/2.2);
     }
 }
 
