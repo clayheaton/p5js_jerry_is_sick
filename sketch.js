@@ -778,7 +778,7 @@ function Sector(xcoord, ycoord, dimension){
             }
         }
 
-        // Place the sticker
+        // Place the sticker - might need to be repositioned a bit
         offsets = this.getStickerOffsetForDirection(current_direction);
         oX = offsets[0];
         oY = offsets[1];
