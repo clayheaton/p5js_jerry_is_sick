@@ -10,6 +10,7 @@ var gameGridHeight = 100;
 
 var sectorsWide = 10;
 var sectorsTall = 10;
+var sectorDim = 100;
 
 var sectors = [];
 var uiHeight = 76;
@@ -56,6 +57,14 @@ var infected_chosen = false;
 
 var turn_count = 0;
 var score = 0;
+var vomit_score_multiplier = 1;
+var vomit_on_turn = false;
+var vomit_points = 5;
+var sneeze_points = 3;
+var spit_points = 2;
+var cough_points = 1;
+
+var info_panel_displayed = true;
 
 function preload(){
     img_state_default = loadImage("art/state_default@2x.png");
@@ -107,7 +116,7 @@ function setup() {
     spitButton = new ActionButton(275,height-uiHeight/2,50,"#7C789D","Spit",triggerSpit);
     vomitButton = new ActionButton(350,height-uiHeight/2,50,"#E51870","Vomit",triggerVomit);
 
-    chooseInfectedButton = new ActionButton(200,height-uiHeight/2,50,"#A61600","Infect",triggerInfection);
+    chooseInfectedButton = new ActionButton(200,height-uiHeight/2,50,"#A61600","Select\nJerry",triggerInfection,-8);
     
 
     actionButtons.push(passButton);
@@ -116,9 +125,19 @@ function setup() {
     actionButtons.push(spitButton);
     actionButtons.push(vomitButton);
 
-    gameGrid = new GameGrid(100,sectorsWide,sectorsTall);
+    gameGrid = new GameGrid(sectorDim,sectorsWide,sectorsTall);
     angleMode(RADIANS);
     drawUI();
+
+
+    // Calculate the initial offset of the view
+    // 
+    // offsetX = (sectorsWide * sectorDim)/4;
+    // offsetY = (sectorsTall * sectorDim)/4;
+
+    // Find center point of middle sector. Offset is origin to that point
+
+
 }
 
 function draw() {
@@ -129,13 +148,22 @@ function draw() {
 
   // background("#122B40"); // Dark blue
   background(220);
-  
-  gameGrid.draw();
 
-  drawUI();
+  if (info_panel_displayed){
+        disease.drawDiseaseInfoPanel();
+  } else {
+    gameGrid.draw();
+    drawUI();
+  }
 }
 
 function mouseClicked(){
+    // Don't perform anything other than closing the
+    // info panel if it is displayed
+    if (info_panel_displayed){
+        info_panel_displayed = false;
+        return;
+    }
   // If a UI button catches the mouse click, return.
   if (intersectsUI(mouseX,mouseY)){
     if (infected_chosen){
@@ -173,10 +201,12 @@ function mouseDragged(){
     offsetX = offsetX + (mouseX - pmouseX);
     offsetY = offsetY + (mouseY - pmouseY);
     mouseJustDragged = true;
+    // print(offsetX + ", " + offsetY);
     return false;
 }
 
 function drawUI(){
+
     // Box around the canvas
     stroke(128);
     noFill();
@@ -288,7 +318,13 @@ function triggerInfection(){
 
 function advanceTurn(){
     turn_count += 1;
+    vomit_on_turn = false;
     gameGrid.advanceTurn();
+
+    // Turn didn't register a vomit so reset the multiplier
+    if (!vomit_on_turn){
+        vomit_score_multiplier = 1;
+    }
 }
 
 //////////////////
@@ -495,6 +531,7 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
 // Disease Class
 ////////////////
 function Disease(seed){
+    this.name = "Jerry has " + "a terrible disease!";
     this.seed = seed;
     this.days_incubation = 4;
     this.days_contagious = 7;
@@ -507,6 +544,7 @@ function Disease(seed){
     // on the board who spin. 
     // Another name: this.rotation_rate
     this.severity = 0.6;
+    this.exanguination_upon_death = true;
 
     // How max of how many turns until a rotation occurs
     this.turns_until_rotate = 3;
@@ -529,11 +567,28 @@ function Disease(seed){
     this.spit_count = 1;
 
     // For each disease, one symptom is unlimited
-    this.unlimited_cough = true;
+    this.unlimited_cough = false;
     this.unlimited_sneeze = false;
     this.unlimited_spit = false;
     this.unlimited_vomit = false;
-    this.exanguination_upon_death = true;
+
+    unlimited_number = Math.floor(Math.random()*4);
+    print(unlimited_number);
+
+    switch (unlimited_number) {
+        case 0:
+            this.unlimited_cough = true;
+            break;
+        case 1:
+            this.unlimited_sneeze = true;
+            break;
+        case 2:
+            this.unlimited_spit = true;
+            break;
+        case 3:
+            this.unlimited_vomit = true;
+            break;
+    }
 
     // TODO: Settting for how long immunity lasts?
 
@@ -547,6 +602,46 @@ function Disease(seed){
         this.disease_progression.push("contagious");
     }
     this.disease_progression.push("immune_or_dead");
+
+    this.drawDiseaseInfoPanel = function(){
+        fill(255);
+        noStroke();
+        rect(1,1,width-2,height-2);
+        textAlign(LEFT);
+
+        // Name
+        fill(0);
+        textSize(18);
+        text(this.name,10,30);
+
+        // Incubation
+        textSize(12);
+        text("Incubation period: " + this.days_incubation, 10, 60);
+        text("Contagious period: " + this.days_contagious, 10, 75);
+        text("Mortality Rate: " + this.mortality_rate, 10, 90);
+        text("Deaths exsanguinate: " + this.exanguination_upon_death, 10, 105);
+        text("% of population immune: " + this.percent_pop_immune, 10, 120);
+        text("Severity of symptoms: " + this.severity, 10, 135);
+        if (this.unlimited_cough) {
+            text("Most common symptom: coughing", 10, 150);
+        }
+        else if (this.unlimited_sneeze){
+            text("Most common symptom: sneezing", 10, 150);
+        }
+        else if (this.unlimited_spit){
+            text("Most common symptom: phlegm", 10, 150);
+        }
+        else if (this.unlimited_vomit){
+            text("Most common symptom: nausea", 10, 150);
+        }
+
+
+        textAlign(CENTER);
+        fill(0);
+        text("Click or tap to continue...",width/2,height - 20);
+
+
+    }
 }
 
 
@@ -625,7 +720,7 @@ function Sector(xcoord, ycoord, dimension){
             print("Target status: " + current_status);
             // Infect and change to barf graphic
             this.coveredWithBarf = true;
-            score += 5;
+            score += (vomit_points*vomit_score_multiplier);
             if (current_status == "healthy"){
                 print("Target was healthy.");
                 this.disease_status += 1;
@@ -646,6 +741,8 @@ function Sector(xcoord, ycoord, dimension){
     }
 
     this.infectWithVomit = function(){
+        vomit_on_turn = true;
+        vomit_score_multiplier += 1;
         this.infect(true);
     }
 
@@ -721,6 +818,7 @@ function Sector(xcoord, ycoord, dimension){
                 // There is a sector. Get it from the gamegrid
                 print("Target is valid");
                 targetSector = gameGrid.sectorForCoords(targetX,targetY);
+                score += cough_points;
                 targetSector.infect();
             }
 
@@ -740,6 +838,7 @@ function Sector(xcoord, ycoord, dimension){
         if (gameGrid.validCoord(primary_target[0],primary_target[1])){
             print("Sneeze target: " + primary_target);
             targetSector = gameGrid.sectorForCoords(primary_target[0],primary_target[1]);
+            score += Math.floor(sneeze_points/3.0);
             targetSector.infect();
         }
 
@@ -782,6 +881,7 @@ function Sector(xcoord, ycoord, dimension){
             if (gameGrid.validCoord(thistarget[0],thistarget[1])){
                 print("Sneeze target: " + thistarget);
                 targetSector = gameGrid.sectorForCoords(thistarget[0],thistarget[1]);
+                score += Math.floor(sneeze_points/3.0);
                 targetSector.infect();
             }
         }
@@ -805,6 +905,7 @@ function Sector(xcoord, ycoord, dimension){
             target_sector_coords = skip_sector.coordinatesToAttack(current_direction);
             if(gameGrid.validCoord(target_sector_coords[0],target_sector_coords[1])){
                 target_sector = gameGrid.sectorForCoords(target_sector_coords[0],target_sector_coords[1]);
+                score += spit_points;
                 target_sector.infect();
             }
         }
@@ -1024,7 +1125,12 @@ function Sector(xcoord, ycoord, dimension){
 //////////////////
 // UI Button Class
 //////////////////
-function ActionButton(x,y,dim,color,label,actionCallback){
+function ActionButton(x,y,dim,color,label,actionCallback,textYOffset){
+    if (textYOffset){
+        this.textYOffset = textYOffset;
+    } else {
+        this.textYOffset = 0;
+    }
     this.x = x;
     this.y = y;
     this.dim = dim;
@@ -1061,6 +1167,6 @@ function ActionButton(x,y,dim,color,label,actionCallback){
         ellipse(this.x,this.y,this.dim,this.dim);
         fill(255);
         textAlign(CENTER);
-        text(this.label,this.x,this.y + 5);
+        text(this.label,this.x,this.y + 5 + this.textYOffset);
     }
 }
