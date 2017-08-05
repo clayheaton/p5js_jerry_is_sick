@@ -217,7 +217,6 @@ function intersectsUI() {
 }
 
 function triggerVomit(){
-
     if (selectedSector){
         secStatus = selectedSector.getDiseaseStatus();
         if (secStatus == "contagious"){
@@ -231,8 +230,16 @@ function triggerVomit(){
 }
 
 function triggerCough(){
-    print("Coughing");
-    advanceTurn();
+    if (selectedSector){
+        secStatus = selectedSector.getDiseaseStatus();
+        if (secStatus == "contagious"){
+            print("Coughing");
+            selectedSector.cough();
+            advanceTurn();
+        } else {
+            print("Selected person is not contagious.");
+        }
+    }
 }
 
 function triggerSneeze(){
@@ -530,7 +537,6 @@ function Sector(xcoord, ycoord, dimension){
         }
         
         if (barfInvolved){
-            print("Target infected. Barf involved.");
             print("Target status: " + current_status);
             // Infect and change to barf graphic
             this.coveredWithBarf = true;
@@ -539,12 +545,17 @@ function Sector(xcoord, ycoord, dimension){
                 print("Target was healthy.");
                 this.disease_status += 1;
                 this.updateImageUsed();
+            } else {
+                print("Target already infected. Vomiting staged.");
             }
         } else {
-            print("Target infected. No barf involved.");
+            
             if (current_status == "healthy"){
+                print("Target infected. No barf involved.");
                 this.disease_status += 1;
                 this.updateImageUsed();
+            } else {
+                print("Target already infected.");
             }
         }
     }
@@ -612,6 +623,31 @@ function Sector(xcoord, ycoord, dimension){
         return [stickerXOffset,stickerYOffset];
     }
 
+    this.cough = function(){
+        target = this.coordinatesToAttack();
+        targetX = target[0];
+        targetY = target[1];
+
+        print("Cough target: " + target);
+
+        if (targetX >= 0 && targetX <= sectorsWide-1 &&
+            targetY >= 0 && targetY <= sectorsTall-1){
+                // There is a sector. Get it from the gamegrid
+                print("Target is valid");
+                targetSector = gameGrid.sectorForCoords(targetX,targetY);
+                targetSector.infect();
+            }
+
+        // Place the graphic
+        current_direction = DIRECTIONS_LOOKUP[this.facing];
+        offsets = this.getStickerOffsetForDirection(current_direction);
+        oX = offsets[0];
+        oY = offsets[1];
+
+        s = new Sticker(img_cough,this.x+oX,this.y+oY,DIRECTIONS[this.facing],0.5,1);
+        gameGrid.stickers_under_people.push(s);
+    }
+
     this.vomit = function(){
         // TODO: Register graphic with the gamegrid
         target = this.coordinatesToAttack();
@@ -628,14 +664,14 @@ function Sector(xcoord, ycoord, dimension){
                 targetSector.infectWithVomit();
             }
 
-            // Place the graphic
-            current_direction = DIRECTIONS_LOOKUP[this.facing];
-            offsets = this.getStickerOffsetForDirection(current_direction);
-            oX = offsets[0];
-            oY = offsets[1];
+        // Place the graphic
+        current_direction = DIRECTIONS_LOOKUP[this.facing];
+        offsets = this.getStickerOffsetForDirection(current_direction);
+        oX = offsets[0];
+        oY = offsets[1];
 
-            s = new Sticker(img_vomit,this.x+oX,this.y+oY,DIRECTIONS[this.facing],0.5,1);
-            gameGrid.stickers_under_people.push(s);
+        s = new Sticker(img_vomit,this.x+oX,this.y+oY,DIRECTIONS[this.facing],0.5,1);
+        gameGrid.stickers_under_people.push(s);
     }
 
     this.getDiseaseStatus = function(){
