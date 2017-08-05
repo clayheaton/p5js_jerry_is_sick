@@ -258,8 +258,16 @@ function triggerSneeze(){
 }
 
 function triggerSpit(){
-    print("Spitting");
-    advanceTurn();
+    if (selectedSector){
+        secStatus = selectedSector.getDiseaseStatus();
+        if (secStatus == "contagious"){
+            print("Spitting");
+            selectedSector.spit();
+            advanceTurn();
+        } else {
+            print("Selected person is not contagious.");
+        }
+    }
 }
 
 function triggerPass(){
@@ -786,6 +794,55 @@ function Sector(xcoord, ycoord, dimension){
         s = new Sticker(img_sneeze,this.x+oX,this.y+oY,DIRECTIONS[this.facing],0.55,1);
         gameGrid.stickers_under_people.push(s);
 
+    }
+
+    this.spit = function(){
+        current_direction = DIRECTIONS_LOOKUP[this.facing];
+        skip_sector_coords = this.coordinatesToAttack(current_direction);
+
+        if(gameGrid.validCoord(skip_sector_coords[0],skip_sector_coords[1])){
+            skip_sector = gameGrid.sectorForCoords(skip_sector_coords[0],skip_sector_coords[1]);
+            target_sector_coords = skip_sector.coordinatesToAttack(current_direction);
+            if(gameGrid.validCoord(target_sector_coords[0],target_sector_coords[1])){
+                target_sector = gameGrid.sectorForCoords(target_sector_coords[0],target_sector_coords[1]);
+                target_sector.infect();
+            }
+        }
+
+        spitX = this.centerX
+        spitY = this.centerY
+
+        if (current_direction == "north"){
+            spitY -= (this.dimension*2);
+        }
+        else if (current_direction == "northwest"){
+            spitX -= (this.dimension*2);
+            spitY -= (this.dimension*2);
+        }
+        else if (current_direction == "west"){
+            spitX -= (this.dimension*2);
+        }
+        else if (current_direction == "southwest"){
+            spitX -= (this.dimension*2);
+            spitY += (this.dimension*2);
+        }
+        else if (current_direction == "south"){
+            spitY += (this.dimension*2);
+        }
+        else if (current_direction == "southeast"){
+            spitX += (this.dimension*2);
+            spitY += (this.dimension*2);
+        }
+        else if (current_direction == "east"){
+            spitX += (this.dimension*2);
+        }
+        else if (current_direction == "northeast"){
+            spitX += (this.dimension*2);
+            spitY -= (this.dimension*2);
+        }
+
+        s = new Sticker(img_spit,spitX,spitY,DIRECTIONS[this.facing],1.8,1);
+        gameGrid.stickers_under_people.push(s);
     }
 
     this.vomit = function(){
