@@ -33,6 +33,7 @@ var img_cough;
 var img_sneeze;
 var img_spit;
 var img_vomit;
+var img_blood;
 
 var DIRECTIONS = [];
 var DIRECTIONS_LOOKUP = {};
@@ -68,6 +69,7 @@ function preload(){
     img_sneeze = loadImage("art/sneeze@2x.png");
     img_spit = loadImage("art/spit@2x.png");
     img_vomit = loadImage("art/vomit@2x.png");
+    img_blood = loadImage("art/blood@2x.png");
 
     DIRECTIONS = [
         DIRECTION_E,
@@ -315,8 +317,72 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
         }
     }
 
+    this.validCoord = function(x,y){
+        if (x >= 0 && x < sectorsWide &&
+            y >= 0 && y < sectorsTall){
+                return true;
+        } else {
+            return false;
+        }
+    }
+
     this.sectorForCoords = function(x,y){
         return this.sectors[y][x];
+    }
+
+    this.sectorsAdjacentToCoords = function(xcoord,ycoord){
+        sectors_to_return = [];
+
+        // North
+        x = xcoord;
+        y = ycoord - 1;
+        if (this.validCoord(x,y)) 
+            {sectors_to_return.push(this.sectorForCoords(x,y))};
+
+        // North West
+        x = xcoord - 1;
+        y = ycoord - 1;
+        if (this.validCoord(x,y)) 
+            {sectors_to_return.push(this.sectorForCoords(x,y))};
+
+        // West
+        x = xcoord - 1;
+        y = ycoord;
+        if (this.validCoord(x,y)) 
+            {sectors_to_return.push(this.sectorForCoords(x,y))};
+
+        // South West
+        x = xcoord - 1;
+        y = ycoord + 1;
+        if (this.validCoord(x,y)) 
+            {sectors_to_return.push(this.sectorForCoords(x,y))};
+
+        // South
+        x = xcoord;
+        y = ycoord + 1;
+        if (this.validCoord(x,y)) 
+            {sectors_to_return.push(this.sectorForCoords(x,y))};
+
+        // South East
+        x = xcoord + 1;
+        y = ycoord + 1;
+        if (this.validCoord(x,y)) 
+            {sectors_to_return.push(this.sectorForCoords(x,y))};
+
+        // East
+        x = xcoord + 1;
+        y = ycoord;
+        if (this.validCoord(x,y)) 
+            {sectors_to_return.push(this.sectorForCoords(x,y))};
+
+        // North East
+        x = xcoord + 1;
+        y = ycoord - 1;
+        if (this.validCoord(x,y)) 
+            {sectors_to_return.push(this.sectorForCoords(x,y))};
+
+        return sectors_to_return;
+
     }
 
     this.advanceTurn = function(){
@@ -451,6 +517,9 @@ function Disease(seed){
     this.unlimited_sneeze = false;
     this.unlimited_spit = false;
     this.unlimited_vomit = false;
+    this.exanguination_upon_death = true;
+
+    // TODO: Settting for how long immunity lasts?
 
     // Store disease progression in an array that we can walk
     // for each person
@@ -717,11 +786,26 @@ function Sector(xcoord, ycoord, dimension){
         } else if (current_status == "immune_or_dead") {
             if (this.dies_from_disease) {
                 this.img = img_state_dead;
+                if (disease.exanguination_upon_death){
+                    this.exsanguinate();
+                }
             } else {
                 this.img = img_state_immune;
             }
             // Stop rotating when dead or immune
             this.rotates = false;
+        }
+    }
+
+    this.exsanguinate = function(){
+        // Add death sticker
+        s = new Sticker(img_blood,this.x+this.dimension/2,this.y+this.dimension/2,DIRECTIONS[this.facing],0.4,1);
+        gameGrid.stickers_under_people.push(s);
+
+        // Infect Neighbors
+        neighbor_sectors = gameGrid.sectorsAdjacentToCoords(this.xcoord,this.ycoord);
+        for (var i = 0; i < neighbor_sectors.length; i++){
+            neighbor_sectors[i].infect();
         }
     }
 
