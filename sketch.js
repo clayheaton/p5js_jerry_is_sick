@@ -245,8 +245,16 @@ function triggerCough(){
 }
 
 function triggerSneeze(){
-    print("Sneezing");
-    advanceTurn();
+    if (selectedSector){
+        secStatus = selectedSector.getDiseaseStatus();
+        if (secStatus == "contagious"){
+            print("Sneezing");
+            selectedSector.sneeze();
+            advanceTurn();
+        } else {
+            print("Selected person is not contagious.");
+        }
+    }
 }
 
 function triggerSpit(){
@@ -633,27 +641,26 @@ function Sector(xcoord, ycoord, dimension){
         this.infect(true);
     }
 
-    this.coordinatesToAttack = function(){
+    this.coordinatesToAttack = function(attackDirection){
         // Returns the first sector in the attack direction
         // If an attack affects more than one sector, the method
         // handling the attack should expand the target list
         // Returns [xcoord,ycoord]
-        current_direction = DIRECTIONS_LOOKUP[this.facing];
-        if(current_direction == "east") {
+        if(attackDirection == "east") {
             return [this.xcoord+1,this.ycoord];
-        } else if (current_direction == "northeast") {
+        } else if (attackDirection == "northeast") {
             return [this.xcoord+1,this.ycoord-1];
-        } else if (current_direction == "north") {
+        } else if (attackDirection == "north") {
             return [this.xcoord,this.ycoord-1];
-        } else if (current_direction == "northwest") {
+        } else if (attackDirection == "northwest") {
             return [this.xcoord-1,this.ycoord-1];
-        } else if (current_direction == "west") {
+        } else if (attackDirection == "west") {
             return [this.xcoord-1,this.ycoord];
-        } else if (current_direction == "southwest") {
+        } else if (attackDirection == "southwest") {
             return [this.xcoord-1,this.ycoord+1];
-        } else if (current_direction == "south") {
+        } else if (attackDirection == "south") {
             return [this.xcoord,this.ycoord+1];
-        } else if (current_direction == "southeast") {
+        } else if (attackDirection == "southeast") {
             return [this.xcoord+1,this.ycoord+1];
         }
     }
@@ -693,12 +700,14 @@ function Sector(xcoord, ycoord, dimension){
     }
 
     this.cough = function(){
-        target = this.coordinatesToAttack();
+        current_direction = DIRECTIONS_LOOKUP[this.facing];
+        target = this.coordinatesToAttack(current_direction);
         targetX = target[0];
         targetY = target[1];
 
         print("Cough target: " + target);
 
+        // Change to use the gameGrid.validCoord method
         if (targetX >= 0 && targetX <= sectorsWide-1 &&
             targetY >= 0 && targetY <= sectorsTall-1){
                 // There is a sector. Get it from the gamegrid
@@ -717,9 +726,72 @@ function Sector(xcoord, ycoord, dimension){
         gameGrid.stickers_under_people.push(s);
     }
 
+    this.sneeze = function(){
+        current_direction = DIRECTIONS_LOOKUP[this.facing];
+        primary_target = this.coordinatesToAttack(current_direction);
+        if (gameGrid.validCoord(primary_target[0],primary_target[1])){
+            print("Sneeze target: " + primary_target);
+            targetSector = gameGrid.sectorForCoords(primary_target[0],primary_target[1]);
+            targetSector.infect();
+        }
+
+        other_target_directions = [];
+        if (current_direction == "north"){
+            other_target_directions.push("northwest");
+            other_target_directions.push("northeast");
+        }
+        else if (current_direction == "northwest"){
+            other_target_directions.push("west");
+            other_target_directions.push("north");
+        }
+        else if (current_direction == "west"){
+            other_target_directions.push("southwest");
+            other_target_directions.push("northwest");
+        }
+        else if (current_direction == "southwest"){
+            other_target_directions.push("south");
+            other_target_directions.push("west");
+        }
+        else if (current_direction == "south"){
+            other_target_directions.push("southwest");
+            other_target_directions.push("southeast");
+        }
+        else if (current_direction == "southeast"){
+            other_target_directions.push("south");
+            other_target_directions.push("east");
+        }
+        else if (current_direction == "east"){
+            other_target_directions.push("southeast");
+            other_target_directions.push("northeast");
+        }
+        else if (current_direction == "northeast"){
+            other_target_directions.push("east");
+            other_target_directions.push("north");
+        }
+
+        for (var i = 0; i < other_target_directions.length; i++){
+            thistarget = this.coordinatesToAttack(other_target_directions[i]);
+            if (gameGrid.validCoord(thistarget[0],thistarget[1])){
+                print("Sneeze target: " + thistarget);
+                targetSector = gameGrid.sectorForCoords(thistarget[0],thistarget[1]);
+                targetSector.infect();
+            }
+        }
+
+        // Place the sticker
+        offsets = this.getStickerOffsetForDirection(current_direction);
+        oX = offsets[0];
+        oY = offsets[1];
+
+        s = new Sticker(img_sneeze,this.x+oX,this.y+oY,DIRECTIONS[this.facing],0.55,1);
+        gameGrid.stickers_under_people.push(s);
+
+    }
+
     this.vomit = function(){
         // TODO: Register graphic with the gamegrid
-        target = this.coordinatesToAttack();
+        current_direction = DIRECTIONS_LOOKUP[this.facing];
+        target = this.coordinatesToAttack(current_direction);
         targetX = target[0];
         targetY = target[1];
 
