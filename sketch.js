@@ -578,6 +578,40 @@ function Sector(xcoord, ycoord, dimension){
         }
     }
 
+    this.getStickerOffsetForDirection = function(dir){
+        stickerXOffset = 0;
+        stickerYOffset = 0;
+        dim = this.dimension
+
+        if(dir == "east") {
+            stickerYOffset = dim/2;
+            stickerXOffset = dim;
+        } else if (dir == "northeast") {
+            stickerYOffset = 0;
+            stickerXOffset = dim;
+        } else if (dir == "north") {
+            stickerYOffset = 0;
+            stickerXOffset = dim/2;
+        } else if (dir == "northwest") {
+            stickerYOffset = 0;
+            stickerXOffset = 0;
+        } else if (dir == "west") {
+            stickerYOffset = dim/2;
+            stickerXOffset = 0;
+        } else if (dir == "southwest") {
+            stickerYOffset = dim;
+            stickerXOffset = 0;
+        } else if (dir == "south") {
+            stickerYOffset = dim;
+            stickerXOffset = dim/2;
+        } else if (dir == "southeast") {
+            stickerYOffset = dim;
+            stickerXOffset = dim;
+        }
+
+        return [stickerXOffset,stickerYOffset];
+    }
+
     this.vomit = function(){
         // TODO: Register graphic with the gamegrid
         target = this.coordinatesToAttack();
@@ -596,37 +630,11 @@ function Sector(xcoord, ycoord, dimension){
 
             // Place the graphic
             current_direction = DIRECTIONS_LOOKUP[this.facing];
-            stickerXOffset = 0;
-            stickerYOffset = 0;
-            dim = this.dimension
+            offsets = this.getStickerOffsetForDirection(current_direction);
+            oX = offsets[0];
+            oY = offsets[1];
 
-            if(current_direction == "east") {
-                stickerYOffset = dim/2;
-                stickerXOffset = dim;
-            } else if (current_direction == "northeast") {
-                stickerYOffset = 0;
-                stickerXOffset = dim;
-            } else if (current_direction == "north") {
-                stickerYOffset = 0;
-                stickerXOffset = dim/2;
-            } else if (current_direction == "northwest") {
-                stickerYOffset = 0;
-                stickerXOffset = 0;
-            } else if (current_direction == "west") {
-                stickerYOffset = dim/2;
-                stickerXOffset = 0;
-            } else if (current_direction == "southwest") {
-                stickerYOffset = dim;
-                stickerXOffset = 0;
-            } else if (current_direction == "south") {
-                stickerYOffset = dim;
-                stickerXOffset = dim/2;
-            } else if (current_direction == "southeast") {
-                stickerYOffset = dim;
-                stickerXOffset = dim;
-            }
-
-            s = new Sticker(img_vomit,this.x+stickerXOffset,this.y+stickerYOffset,DIRECTIONS[this.facing],0.5,1);
+            s = new Sticker(img_vomit,this.x+oX,this.y+oY,DIRECTIONS[this.facing],0.5,1);
             gameGrid.stickers_under_people.push(s);
     }
 
