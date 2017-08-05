@@ -266,6 +266,29 @@ function advanceTurn(){
     gameGrid.advanceTurn();
 }
 
+//////////////////
+// Stickers - coughs, vomit, etc.
+//////////////////
+function Sticker(sticker_image,x,y,sticker_rotation,sticker_scale,decay){
+    this.x = x;
+    this.y = y;
+    this.img = sticker_image;
+    this.rotation = sticker_rotation;
+    this.scale = sticker_scale;
+
+    // Not implemented
+    // After how many turns should it disappear?
+    this.decay = decay;
+
+    this.draw = function(){
+        push();
+        translate(offsetX+this.x,offsetY+this.y);
+        rotate(this.rotation);
+        scale(this.scale)
+        image(this.img,0,0);
+        pop();
+    }
+}
 
 //////////////////
 // Game Grid Class
@@ -275,6 +298,7 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
     this.sectors_wide = sectors_wide;
     this.sectors_tall = sectors_tall;
     this.sectors = [];
+    this.stickers_under_people = [];
 
     for (var i = 0; i < this.sectors_tall; i++) {
         this.sectors.push([])
@@ -344,12 +368,30 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
     }
 
     this.drawGrid = function(){
+        // Draw the floor
         for (var i = 0; i < this.sectors_tall; i++) {
             for (var j = 0; j < this.sectors_wide; j++){
-                this.sectors[i][j].draw();
+                this.sectors[i][j].drawFloor();
+            }
+        }
+        // Draw the stickers
+        for (var i = 0; i < this.stickers_under_people.length; i++){
+            this.stickers_under_people[i].draw();
+        }
+        // Draw the People
+        for (var i = 0; i < this.sectors_tall; i++) {
+            for (var j = 0; j < this.sectors_wide; j++){
+                this.sectors[i][j].drawPerson();
+            }
+        }
+        // Draw the rotation indicators - Sector UI components
+        for (var i = 0; i < this.sectors_tall; i++) {
+            for (var j = 0; j < this.sectors_wide; j++){
+                this.sectors[i][j].drawRotationIndicator();
             }
         }
     }
+
 
     this.draw = function(){
         if(!mouseIsPressed){
@@ -553,6 +595,39 @@ function Sector(xcoord, ycoord, dimension){
             }
 
             // Place the graphic
+            current_direction = DIRECTIONS_LOOKUP[this.facing];
+            stickerXOffset = 0;
+            stickerYOffset = 0;
+            dim = this.dimension
+
+            if(current_direction == "east") {
+                stickerYOffset = dim/2;
+                stickerXOffset = dim;
+            } else if (current_direction == "northeast") {
+                stickerYOffset = 0;
+                stickerXOffset = dim;
+            } else if (current_direction == "north") {
+                stickerYOffset = 0;
+                stickerXOffset = dim/2;
+            } else if (current_direction == "northwest") {
+                stickerYOffset = 0;
+                stickerXOffset = 0;
+            } else if (current_direction == "west") {
+                stickerYOffset = dim/2;
+                stickerXOffset = 0;
+            } else if (current_direction == "southwest") {
+                stickerYOffset = dim;
+                stickerXOffset = 0;
+            } else if (current_direction == "south") {
+                stickerYOffset = dim;
+                stickerXOffset = dim/2;
+            } else if (current_direction == "southeast") {
+                stickerYOffset = dim;
+                stickerXOffset = dim;
+            }
+
+            s = new Sticker(img_vomit,this.x+stickerXOffset,this.y+stickerYOffset,DIRECTIONS[this.facing],0.5,1);
+            gameGrid.stickers_under_people.push(s);
     }
 
     this.getDiseaseStatus = function(){
@@ -621,7 +696,7 @@ function Sector(xcoord, ycoord, dimension){
         }
     }
 
-    this.draw = function(){
+    this.drawFloor = function(){
         // Draw the actual grid
         stroke(220);
         fill(255);
@@ -647,7 +722,9 @@ function Sector(xcoord, ycoord, dimension){
             rect(this.x,this.y,this.dimension,this.dimension);
             pop();
         }
+    }
 
+    this.drawPerson = function(){
         // Draw the person
         picScale = 2.2;
         imageMode(CENTER);
@@ -656,7 +733,11 @@ function Sector(xcoord, ycoord, dimension){
         rotate(DIRECTIONS[this.facing]);
         image(this.img,0,0,this.img.width/2.2,this.img.height/2.2);
         pop();
+    }
 
+    this.draw = function(){
+        this.drawFloor();
+        this.drawPerson();
         this.drawRotationIndicator();
     }
 
