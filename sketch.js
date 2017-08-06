@@ -533,21 +533,21 @@ function GameGrid(sector_dimension,sectors_wide,sectors_tall){
 function Disease(seed){
     this.name = "Jerry has " + "a terrible disease!";
     this.seed = seed;
-    this.days_incubation = 4;
-    this.days_contagious = 7;
-    this.mortality_rate = 0.15;
-    this.percent_pop_immune = 0.1;
+    this.days_incubation = Math.floor(Math.random()*4) + 1; // 1-4
+    this.days_contagious = Math.floor(Math.random()*4) + 3; // 3-7
+    this.mortality_rate = (Math.floor(Math.random()*30) + 1) / 100; // was 0.15
+    this.percent_pop_immune = (Math.floor(Math.random()*20) + 1) / 100;
 
     // Maps to mobility. The more severe,
     // the less somebody can move.
     // The more severe, the fewer people
     // on the board who spin. 
     // Another name: this.rotation_rate
-    this.severity = 0.6;
+    this.severity = (Math.floor(Math.random()*40) + 30) / 100; // was 0.6
     this.exanguination_upon_death = true;
 
     // How max of how many turns until a rotation occurs
-    this.turns_until_rotate = 3;
+    this.turns_until_rotate = Math.floor(Math.random()*4) + 2; // was 3
 
     // Generate values procedurally
     // Global means there's a certain count
@@ -671,7 +671,12 @@ function Sector(xcoord, ycoord, dimension){
     this.remaining_spits = 0;
     this.remaining_vomits = 0;
     this.rotates = false;
-    this.segments_to_rotate = 1;
+    this.segments_to_rotate = Math.random();
+    if (this.segments_to_rotate > 0.5){
+        this.segments_to_rotate = 1;
+    } else {
+        this.segments_to_rotate = -1;
+    }
     this.rotation_turn_counter = 0;
     this.rotation_on_turn = Math.floor(Math.random() * disease.turns_until_rotate) + 1;
     this.dies_from_disease = false;
@@ -1038,15 +1043,21 @@ function Sector(xcoord, ycoord, dimension){
             neighbor_sectors[i].infect();
         }
     }
-
+    // Update for rotating the other direction
     this.rotatePerson = function() {
         if (this.rotates){
             this.rotation_turn_counter += 1;
             if (this.rotation_turn_counter == this.rotation_on_turn){
                 this.rotation_turn_counter = 0;
                 this.facing += this.segments_to_rotate;
-                if (this.facing >= DIRECTIONS.length) {
-                    this.facing = this.facing - DIRECTIONS.length;
+                if (this.segments_to_rotate < 0){
+                    if (this.facing < 0){
+                        this.facing = DIRECTIONS.length + this.facing;
+                    }
+                } else {
+                    if (this.facing >= DIRECTIONS.length){
+                        this.facing = this.facing - DIRECTIONS.length;
+                    }
                 }
             }
             // Set the turn indicator
@@ -1106,17 +1117,58 @@ function Sector(xcoord, ycoord, dimension){
             push();
             translate(offsetX,offsetY);
             stroke(0);
-            strokeWeight(3);
+            strokeWeight(2);
             noFill();
-            if (this.rotation_indicator == 1){
-                stroke("#5BE65D");
-            }
-            arc(this.x+10, this.y+this.dimension - 10, 15, 15, 0, Math.PI*2*this.rotation_indicator,true);
+            // if (this.rotation_indicator == 1){
+            //     stroke("#5BE65D");
+            // }
             
+            var shortenAngleBy = 25;
+
+            if (this.segments_to_rotate < 0){
+                arrowAngle = Math.PI*2*this.rotation_indicator - radians(shortenAngleBy);
+
+                arrowTailAngle = Math.PI*2*(this.rotation_indicator) - radians(shortenAngleBy*2);
+
+                arc(this.x+10, this.y+this.dimension - 10, 15, 15, 0, arrowAngle,true);
+
+                arrowX = this.x+10 + (15/2.0) * Math.cos(arrowAngle);
+                arrowY = this.y+this.dimension - 10 + (15/2.0) * Math.sin(arrowAngle);
+
+                arrowTail1X = this.x+10 + 9 * Math.cos(arrowTailAngle);
+                arrowTail1Y = this.y+this.dimension - 10 + 9 * Math.sin(arrowTailAngle);
+
+                line(arrowX,arrowY,arrowTail1X,arrowTail1Y);
+
+                arrowTail2X = this.x+10 + 6 * Math.cos(arrowTailAngle);
+                arrowTail2Y = this.y+this.dimension - 10 + 6 * Math.sin(arrowTailAngle);
+
+                line(arrowX,arrowY,arrowTail2X,arrowTail2Y);
+
+            } else {
+                
+                arrowAngle = -1*Math.PI*2*this.rotation_indicator - radians(shortenAngleBy);
+
+                arrowTailAngle = -1*Math.PI*2*(this.rotation_indicator) + radians(shortenAngleBy/2);
+
+                arc(this.x+10, this.y+this.dimension - 10, 15, 15, -1*Math.PI*2*this.rotation_indicator,-radians(shortenAngleBy+20),true);
+            
+                arrowX = this.x+10 + (15/2.0) * Math.cos(arrowAngle);
+                arrowY = this.y+this.dimension - 10 + (15/2.0) * Math.sin(arrowAngle);
+
+                //ellipse(arrowX,arrowY,4,4);
+                arrowTail1X = this.x+10 + 9 * Math.cos(arrowTailAngle);
+                arrowTail1Y = this.y+this.dimension - 10 + 9 * Math.sin(arrowTailAngle);
+                line(arrowX,arrowY,arrowTail1X,arrowTail1Y);
+
+                arrowTail2X = this.x+10 + 6 * Math.cos(arrowTailAngle);
+                arrowTail2Y = this.y+this.dimension - 10 + 6 * Math.sin(arrowTailAngle);
+                line(arrowX,arrowY,arrowTail2X,arrowTail2Y);
+            }
             // Text shows how frequently the person turns
             noStroke();
             fill(0);
-            text(this.rotation_on_turn,this.x+10, this.y+this.dimension - 5.5)
+            text(this.rotation_on_turn,this.x+10, this.y+this.dimension - 5.5);
             pop();
         }
     }
