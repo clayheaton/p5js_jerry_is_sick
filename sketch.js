@@ -22,6 +22,7 @@ var chooseInfectedButton;
 var gameGrid;
 var selectedSector = null;
 var disease;
+var selected_sector_is_contagious = true;
 
 var img_title;
 var img_state_default;
@@ -241,24 +242,38 @@ function mouseClicked() {
   // If a UI button catches the mouse click, return.
   if (intersectsUI(mouseX, mouseY)) {
     if (infected_chosen) {
-      for (var i = 0; i < actionButtons.length; i++) {
-        // Don't use adjustedMouseX because the UI doesn't move
-        // in the same frame as the game field.
-        if (actionButtons[i].catchesClick(mouseX, mouseY)) {
-          actionButtons[i].triggerAction();
-          return;
+        if (selected_sector_is_contagious){
+            for (var i = 0; i < actionButtons.length; i++) {
+                // Don't use adjustedMouseX because the UI doesn't move
+                // in the same frame as the game field.
+                if (actionButtons[i].catchesClick(mouseX, mouseY)) {
+                    actionButtons[i].triggerAction();
+                    return;
+                 }
+            }
+        } else {
+            if (passButton.catchesClick(mouseX,mouseY)){
+                passButton.triggerAction();
+            }
         }
-      }
     } else {
       if (chooseInfectedButton.catchesClick(mouseX, mouseY)) {
         chooseInfectedButton.triggerAction();
+        selected_sector_is_contagious = true;
         return;
       }
     }
   } else {
     // The UI didn't catch it so try to select a sector
     if (!mouseJustDragged) {
-      gameGrid.selectSector();
+      sector_status = gameGrid.selectSector();
+      print("Selected Sector Status: " + sector_status);
+      if (sector_status == "contagious"){
+          selected_sector_is_contagious = true;
+      } else {
+          selected_sector_is_contagious = false;
+      }
+      // TODO: If the sector is not contagious, hide the action buttons
     } else {
       mouseJustDragged = false;
     }
@@ -271,6 +286,10 @@ function calculateAdjustedMousePosition() {
 }
 
 function mouseDragged() {
+    // Don't start drags on the UI.
+    if (intersectsUI(mouseX, mouseY)){
+        return;
+    }
   offsetX = offsetX + (mouseX - pmouseX);
   offsetY = offsetY + (mouseY - pmouseY);
   mouseJustDragged = true;
@@ -301,10 +320,14 @@ function drawUI() {
 
   // Draw the action buttons
   if (infected_chosen) {
-    for (var i = 0; i < actionButtons.length; i++) {
-      actionButtons[i].draw();
-    }
-  } else {
+      if (!selected_sector_is_contagious){
+        passButton.draw();
+      } else {
+        for (var i = 0; i < actionButtons.length; i++) {
+            actionButtons[i].draw();
+        }
+      }
+  } else if (!infected_chosen) {
     // Player needs to choose the infected person
     chooseInfectedButton.draw();
   }
@@ -380,7 +403,12 @@ function triggerInfection() {
   if (selectedSector) {
     print("Initial Infection");
     infected_chosen = true;
-    selectedSector.disease_status = 1;
+    secStatus = selectedSector.getDiseaseStatus();
+    print("  secStatus: " + secStatus);
+    while (secStatus != "contagious"){
+        selectedSector.disease_status += 1;
+        secStatus = selectedSector.getDiseaseStatus();
+    }
     selectedSector.updateImageUsed();
   } else {
     print("Select a person to infect.");
@@ -391,6 +419,12 @@ function advanceTurn() {
   turn_count += 1;
   vomit_on_turn = false;
   gameGrid.advanceTurn();
+
+  if (selectedSector.getDiseaseStatus() == "contagious"){
+      selected_sector_is_contagious = true;
+  } else {
+      selected_sector_is_contagious = false;
+  }
 
   // Turn didn't register a vomit so reset the multiplier
   if (!vomit_on_turn) {
@@ -575,6 +609,8 @@ function GameGrid(sector_dimension, sectors_wide, sectors_tall) {
     }
     this.sectors[ypos][xpos].isSelected = true;
     selectedSector = this.sectors[ypos][xpos];
+
+    return selectedSector.getDiseaseStatus();
   };
 
   this.drawGrid = function() {
@@ -667,7 +703,7 @@ function Disease(seed) {
 
   this.name = possible_names[choice];
   this.seed = seed;
-  this.days_incubation = Math.floor(Math.random() * 4) + 1; // 1-4
+  this.days_incubation = Math.floor(Math.random() * 4) + 2; // 2-5
   this.days_contagious = Math.floor(Math.random() * 4) + 3; // 3-7
   this.mortality_rate = (Math.floor(Math.random() * 30) + 1) / 100; // was 0.15
   this.percent_pop_immune = (Math.floor(Math.random() * 20) + 1) / 100;
@@ -741,6 +777,8 @@ function Disease(seed) {
     fill(255);
     noStroke();
     rect(1, 1, width - 2, height - 2);
+    fill("#8CDDFF");
+    rect(1,1,width - 2, height/3 - 1);
     textAlign(LEFT);
 
     // Header
@@ -749,17 +787,21 @@ function Disease(seed) {
     text("CDC Report", 10, 50);
 
     textSize(18);
-    text(this.name,10,100);
+    text(this.name,10,80);
 
     // Incubation
-    base_height = 60;
+    // TODO: Fix the issue where the incubation period and contagious period
+    // don't seem to align with the reality of what the player experiences.
+    // This might mean adding an indicator for disease status for the player.
+    base_height = 40;
     textSize(12);
-    text("Incubation period: " + this.days_incubation, 10, 60 + base_height);
+    text("Incubation period: " + (this.days_incubation - 1), 10, 60 + base_height);
     text("Contagious period: " + this.days_contagious, 10, 75 + base_height);
     text("Mortality Rate: " + parseInt(this.mortality_rate*100) + "%", 10, 90 + base_height);
     text("Deaths exsanguinate: " + this.exanguination_upon_death, 10, 105 + base_height);
     text("% of population immune: " + parseInt(this.percent_pop_immune*100) + "%", 10, 120 + base_height);
     text("Severity of symptoms: " + parseInt(this.severity*100) + "/100", 10, 135 + base_height);
+    
     if (this.unlimited_cough) {
       text("Most common symptom: coughing", 10, 150 + base_height);
     } else if (this.unlimited_sneeze) {
@@ -770,9 +812,63 @@ function Disease(seed) {
       text("Most common symptom: nausea", 10, 150 + base_height);
     }
 
+    noFill();
+    stroke(0);
+    line(0,height/3,width,height/3);
+    noStroke();
+    fill(0);
+    textSize(11);
+    text("Jimmy is sick!\n" +
+         "Help him spread the disease!\n\n" +
+         "Your tasks are as follows:\n" +
+         "1. Tell us who Jimmy is by clicking on a person and clicking select.\n" +
+         "2. Use the symptom buttons at the bottom to spread the disease. You can\n" +
+         "   select any person on the board by click on them. When you select a person\n" +
+         "   that is contagious, the symptom buttons will appear at the bottom.\n" +
+         "3. Try to infect as many people as you can as quickly as possible.\n\n" +
+
+         "About the symptoms:\n" +
+         "The TARGET is the person that the selected contagious person is facing.\n" +
+         " - Cough infects the target.\n" +
+         " - Sneeze infects the target AND healthy people adjacent to the target.\n" +
+         " - Spit infects the person beyond the target.\n" +
+         " - Vomit infects the target and primes them to vomit on the first turn\n" +
+         "   they are contagious. Use this to create chain vomit reactions!\n\n" +
+
+         "Depending on the disease, some symptoms are more prevalent than others.",10,height/2.8);
+
     textAlign(CENTER);
     fill(0);
-    text("Click or tap to continue...", width / 2, height - 20);
+
+    // Show people and explanatory text
+    imageMode(CORNER);
+    key_width = img_state_default.width*0.3;
+    key_height = img_state_default.height*0.3;
+    key_ypos = height/1.25;
+    key_text_ypos = height/1.1;
+
+    key_offset = 20;
+
+    image(img_state_default,key_offset,key_ypos,key_width,key_height);
+    text("healthy",key_offset+key_width/2,key_text_ypos);
+
+    image(img_state_infected,key_offset+(1*key_width),key_ypos,key_width,key_height);
+    text("infected",key_offset+key_width*3/2,key_text_ypos);
+
+    image(img_state_infected_vomit,key_offset+(2*key_width),key_ypos,key_width,key_height);
+    text("infected\nwill vomit",key_offset+key_width*5/2,key_text_ypos);
+
+    image(img_state_contagious,key_offset+(3*key_width),key_ypos,key_width,key_height);
+    text("contagious",key_offset+key_width*7/2,key_text_ypos);
+
+    image(img_state_contagious_vomit,key_offset+(4*key_width),key_ypos,key_width,key_height);
+    text("contagious\nwill vomit",key_offset+key_width*9/2,key_text_ypos);
+
+    image(img_state_immune,key_offset+(5*key_width),key_ypos,key_width,key_height);
+    text("immune",key_offset+key_width*11/2,key_text_ypos);
+
+    textSize(14);
+    text("Click or tap to continue...", width / 2, height - 15);
   };
 }
 
@@ -1359,6 +1455,7 @@ function Sector(xcoord, ycoord, dimension) {
       // Text shows how frequently the person turns
       noStroke();
       fill(0);
+      textAlign(CENTER);
       text(this.rotation_on_turn, this.x + 10, this.y + this.dimension - 5.5);
       pop();
     }
