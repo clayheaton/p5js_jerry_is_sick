@@ -159,7 +159,7 @@ function setup() {
     height - uiHeight / 2,
     50,
     "#A61600",
-    "Select\nJerry",
+    "Select\nJimmy",
     triggerInfection,
     -8
   );
@@ -615,7 +615,57 @@ function GameGrid(sector_dimension, sectors_wide, sectors_tall) {
 // Disease Class
 ////////////////
 function Disease(seed) {
-  this.name = "Jimmy has " + "a terrible disease!";
+
+  possible_names = [
+      "Prion Disease",
+      "Transmissible Spongiform Encephalopathies",
+      "African Trypanosomiasis",
+      "Cryptococcal Meningitis",
+      "Septicemic Plague",
+      "Pneumonic Plague",
+      "Rabies",
+      "Viceral Leishmaniasis",
+      "Fibrodysplasia Ossificans Progressiva",
+      "Primary Amoebic Meningoencephalitis",
+      "Septicemic Glanders",
+      "Hemorrhagic Variola Major",
+      "Granulomatous Amoebic Encephalitis",
+      "Ebola: Zaire Variant",
+      "Ebola: Sudan Variant",
+      "Anthrax",
+      "Invasive Pulmonary Aspergillosis",
+      "Cryptococcal Memingitis",
+      "Influenza A: H5N1",
+      "Bubonic Plague",
+      "Gastrointestinal Anthrax",
+      "Tetanus",
+      "Middle Eastern Respiratory Syndrome (MERS)",
+      "Hantavirus",
+      "Typhoidal Tularemia",
+      "Eastern Equine Encephalitis Virus",
+      "Ebola: Bundibugyo Variant",
+      "Varicella",
+      "Dengue Haemorrhagic Fever",
+      "Leptospirosis",
+      "Legionellosis",
+      "Meningococcal Disease",
+      "Typhoid Fever",
+      "Severe Acute Respiratory Syndrome (SARS)",
+      "Intestinal Capillariasis",
+      "Botulism",
+      "Diphtheria",
+      "Pertussis",
+      "Spanish Flu",
+      "Venezuelan Equine Encephalitis",
+      "Typhoid Fever",
+      "Malaria",
+      "Asian Flu",
+      "Hong Kong Flu"
+  ]
+
+  choice = Math.floor(Math.random()*possible_names.length);
+
+  this.name = possible_names[choice];
   this.seed = seed;
   this.days_incubation = Math.floor(Math.random() * 4) + 1; // 1-4
   this.days_contagious = Math.floor(Math.random() * 4) + 3; // 3-7
@@ -693,20 +743,23 @@ function Disease(seed) {
     rect(1, 1, width - 2, height - 2);
     textAlign(LEFT);
 
-    // Name
+    // Header
     fill(0);
     textSize(36);
     text("CDC Report", 10, 50);
+
+    textSize(18);
+    text(this.name,10,100);
 
     // Incubation
     base_height = 60;
     textSize(12);
     text("Incubation period: " + this.days_incubation, 10, 60 + base_height);
     text("Contagious period: " + this.days_contagious, 10, 75 + base_height);
-    text("Mortality Rate: " + this.mortality_rate, 10, 90 + base_height);
+    text("Mortality Rate: " + parseInt(this.mortality_rate*100) + "%", 10, 90 + base_height);
     text("Deaths exsanguinate: " + this.exanguination_upon_death, 10, 105 + base_height);
-    text("% of population immune: " + this.percent_pop_immune, 10, 120 + base_height);
-    text("Severity of symptoms: " + this.severity, 10, 135 + base_height);
+    text("% of population immune: " + parseInt(this.percent_pop_immune*100) + "%", 10, 120 + base_height);
+    text("Severity of symptoms: " + parseInt(this.severity*100) + "/100", 10, 135 + base_height);
     if (this.unlimited_cough) {
       text("Most common symptom: coughing", 10, 150 + base_height);
     } else if (this.unlimited_sneeze) {
