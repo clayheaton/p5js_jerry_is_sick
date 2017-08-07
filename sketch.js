@@ -430,6 +430,7 @@ function calculateAdjustedMousePosition() {
   adjustedMouseY = mouseY - offsetY;
 }
 
+// TODO: Figure out why this causes double clicks on non-mobile devices.
 // function touchEnded() {
 //     mouseClicked();
 // }
