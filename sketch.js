@@ -167,6 +167,20 @@ function setup() {
     -8
   );
 
+  // UI indication that a symptom is the most common
+  // for the current disease
+  if (!unlimited_moves){
+    if (disease.unlimited_cough){
+        coughButton.highlight = true;
+    } else if (disease.unlimited_sneeze) {
+        sneezeButton.highlight = true;
+    } else if (disease.unlimited_spit) {
+        spitButton.highlight = true;
+    } else if (disease.unlimited_vomit) {
+        vomitButton.highlight = true;
+    }
+  }
+
   actionButtons.push(passButton);
   actionButtons.push(coughButton);
   actionButtons.push(sneezeButton);
@@ -251,14 +265,42 @@ function mouseClicked() {
   if (intersectsUI(mouseX, mouseY)) {
     if (infected_chosen) {
       if (selected_sector_is_contagious) {
-        for (var i = 0; i < actionButtons.length; i++) {
-          // Don't use adjustedMouseX because the UI doesn't move
-          // in the same frame as the game field.
-          if (actionButtons[i].catchesClick(mouseX, mouseY)) {
-            actionButtons[i].triggerAction();
-            return;
+          if (!unlimited_moves){
+            if (!selectedSector.limit_symptoms){
+                allActionButtonsCatchMouse();
+            } else {
+                // TODO: Refactor into Action Button so that it checks conditions
+
+                // Pass button doesn't have to check conditions.
+                if (passButton.catchesClick(mouseX,mouseY)){
+                    passButton.triggerAction();
+                }
+
+                if (disease.unlimited_cough){
+                    if (coughButton.catchesClick(mouseX,mouseY)){
+                        coughButton.triggerAction();
+                    }
+                }
+                if (disease.unlimited_sneeze){
+                    if (sneezeButton.catchesClick(mouseX,mouseY)){
+                        sneezeButton.triggerAction();
+                    }
+                }
+                if (disease.unlimited_spit){
+                    if (spitButton.catchesClick(mouseX,mouseY)){
+                        spitButton.triggerAction();
+                    }
+                }
+                if (disease.unlimited_vomit){
+                    if (vomitButton.catchesClick(mouseX,mouseY)){
+                        vomitButton.triggerAction();
+                    }
+                }
+            }
+          } else {
+            allActionButtonsCatchMouse();
           }
-        }
+
       } else {
         if (passButton.catchesClick(mouseX, mouseY)) {
           passButton.triggerAction();
@@ -286,6 +328,15 @@ function mouseClicked() {
       mouseJustDragged = false;
     }
   }
+}
+
+function allActionButtonsCatchMouse(){
+    for (var i = 0; i < actionButtons.length; i++) {
+        if (actionButtons[i].catchesClick(mouseX, mouseY)) {
+            actionButtons[i].triggerAction();
+            return;
+        }
+    }
 }
 
 function calculateAdjustedMousePosition() {
@@ -331,14 +382,40 @@ function drawUI() {
     if (!selected_sector_is_contagious) {
       passButton.draw();
     } else {
-      for (var i = 0; i < actionButtons.length; i++) {
-        actionButtons[i].draw();
-      }
+
+        if (!unlimited_moves){
+            if (!selectedSector.limit_symptoms){
+                drawAllSymptomButtoms();
+            } else {
+                passButton.draw();
+                if (disease.unlimited_cough){
+                    coughButton.draw();
+                } else if (disease.unlimited_sneeze){
+                    sneezeButton.draw();
+                } else if (disease.unlimited_spit){
+                    spitButton.draw();
+                } else if (disease.unlimited_vomit){
+                    vomitButton.draw();
+                }
+            }
+        } else {
+            drawAllSymptomButtoms();
+        }
+
+    //   for (var i = 0; i < actionButtons.length; i++) {
+    //     actionButtons[i].draw();
+    //   }
     }
   } else if (!infected_chosen) {
     // Player needs to choose the infected person
     chooseInfectedButton.draw();
   }
+}
+
+function drawAllSymptomButtoms(){
+    for (var i = 0; i < actionButtons.length; i++) {
+        actionButtons[i].draw();
+    }
 }
 
 function intersectsUI() {
@@ -1433,7 +1510,9 @@ function Sector(xcoord, ycoord, dimension) {
 
   this.drawFloor = function() {
     // Draw the actual grid
+    strokeWeight(1);
     stroke(220);
+    noStroke();
     fill(255);
     push();
     translate(offsetX, offsetY);
@@ -1579,6 +1658,7 @@ function ActionButton(x, y, dim, color, label, actionCallback, textYOffset) {
   this.color = color;
   this.callback = actionCallback;
   this.label = label;
+  this.highlight = false;
 
   this.triggerAction = function() {
     this.callback();
@@ -1602,14 +1682,21 @@ function ActionButton(x, y, dim, color, label, actionCallback, textYOffset) {
   };
 
   this.draw = function() {
+      noStroke();
     if (selectedSector) {
       fill(this.color);
     } else {
       fill(128);
     }
+
+    if (this.highlight){
+        stroke("#FFF");
+        strokeWeight(3);
+    }
     ellipseMode(CENTER);
     ellipse(this.x, this.y, this.dim, this.dim);
     fill(255);
+    noStroke();
     textAlign(CENTER);
     text(this.label, this.x, this.y + 5 + this.textYOffset);
   };
