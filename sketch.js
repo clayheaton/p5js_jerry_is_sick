@@ -577,9 +577,9 @@ function calculateAdjustedMousePosition() {
 }
 
 // TODO: Figure out why this causes double clicks on non-mobile devices.
-// function touchEnded() {
-//     mouseClicked();
-// }
+function touchEnded() {
+    mouseClicked();
+}
 
 
 function mouseDragged() {
