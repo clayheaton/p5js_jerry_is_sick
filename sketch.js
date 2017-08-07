@@ -112,6 +112,8 @@ function setup() {
   canvas.parent("canvasHolder");
   background("#122B40");
 
+  randomSeed(1);
+  
   // Generate the disease
   disease = new Disease(123);
 
@@ -244,6 +246,12 @@ function displaySplashPanel() {
   fill("#fff");
   text("Jimmy is sick", width - 20, 50);
 
+  textSize(14);
+  textAlign(LEFT);
+  noStroke();
+  fill("#000");
+  text("Jimmy is waiting at the DMV\nwhen he starts to feel sick.",20,height/1.5);
+
   fill(0);
   textSize(14);
   textAlign(LEFT);
@@ -251,6 +259,10 @@ function displaySplashPanel() {
 }
 
 function mouseClicked() {
+    // Ignore clicks out side of the play area.
+  if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height){
+      return;
+  }
   if (splash_panel_displayed) {
     splash_panel_displayed = false;
     return;
@@ -946,11 +958,11 @@ function Disease(seed) {
     textAlign(LEFT);
     text(
       "Jimmy is sick!\n" +
-        "Help him spread the disease!\n\n" +
+        "Help him spread the disease at the DMV!\n\n" +
         "Your tasks are as follows:\n" +
-        "1. Tell us who Jimmy is by clicking on a person and clicking select.\n" +
-        "2. Use the symptom buttons at the bottom to spread the disease. You can\n" +
-        "   select any person on the board by click on them. When you select a person\n" +
+        "1. Point out who Jimmy is by clicking on a person and clicking select.\n" +
+        "2. Use the symptom buttons at the bottom to spread the disease. Select\n" +
+        "   any person on the board by clicking on them. When you select a person\n" +
         "   that is contagious, the symptom buttons will appear at the bottom.\n" +
         "3. Try to infect as many people as you can as quickly as possible.\n\n" +
         "About the symptoms:\n" +
@@ -1121,7 +1133,6 @@ function Sector(xcoord, ycoord, dimension) {
       if (current_status == "healthy") {
         print("Target was healthy.");
         this.disease_status += 1;
-        this.updateImageUsed();
       } else {
         print("Target already infected. Vomiting staged.");
       }
@@ -1129,11 +1140,12 @@ function Sector(xcoord, ycoord, dimension) {
       if (current_status == "healthy") {
         print("Target infected. No barf involved.");
         this.disease_status += 1;
-        this.updateImageUsed();
       } else {
         print("Target already infected.");
       }
     }
+    // Apply new image, if needed
+    this.updateImageUsed();
   };
 
   this.infectWithVomit = function() {
@@ -1420,17 +1432,18 @@ function Sector(xcoord, ycoord, dimension) {
   };
 
   this.advanceDisease = function() {
-    // Do we advance the disease?
     current_status = disease.disease_progression[this.disease_status];
     if (current_status != "healthy" && current_status != "immune_or_dead") {
-      // TODO: Decide whether to allow the infected to vomit or they wait until contagious
-      // TODO: Remove player's ability to cause barf covered person to perform another action
+
+      // TODO: Remove player's ability to cause barf covered person to perform another action?
       // until after the barf is complete. Or does the barf consume all actions?
+
+      this.disease_status += 1;
+      current_status = disease.disease_progression[this.disease_status];
       if (this.coveredWithBarf && current_status == "contagious") {
         this.vomit();
         this.coveredWithBarf = false;
       }
-      this.disease_status += 1;
       this.updateImageUsed();
     }
   };
@@ -1464,6 +1477,9 @@ function Sector(xcoord, ycoord, dimension) {
     }
   };
 
+
+
+
   this.exsanguinate = function() {
     // Add death sticker
     s = new Sticker(
@@ -1485,6 +1501,10 @@ function Sector(xcoord, ycoord, dimension) {
       neighbor_sectors[i].infect();
     }
   };
+
+
+
+
   // Update for rotating the other direction
   this.rotatePerson = function() {
     if (this.rotates) {
@@ -1508,6 +1528,10 @@ function Sector(xcoord, ycoord, dimension) {
     }
   };
 
+
+
+
+
   this.drawFloor = function() {
     // Draw the actual grid
     strokeWeight(1);
@@ -1522,7 +1546,7 @@ function Sector(xcoord, ycoord, dimension) {
 
     if (this.isSelected) {
       noStroke();
-      fill(150); // fill("#5C727C");
+      fill(180); // fill("#5C727C");
       push();
       translate(offsetX, offsetY);
       rect(this.x, this.y, this.dimension, this.dimension);
@@ -1530,13 +1554,18 @@ function Sector(xcoord, ycoord, dimension) {
     }
     if (this.isUnderMousePointer && mouseY < height - uiHeight) {
       noStroke();
-      fill(200); // fill("#334B5B");
+      fill(220); // fill("#334B5B");
       push();
       translate(offsetX, offsetY);
       rect(this.x, this.y, this.dimension, this.dimension);
       pop();
     }
   };
+
+
+
+
+
 
   this.drawPerson = function() {
     // Draw the person
