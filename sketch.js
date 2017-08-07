@@ -66,6 +66,8 @@ var sneeze_points = 3;
 var spit_points = 2;
 var cough_points = 1;
 
+var unlimited_moves = false;
+
 var splash_panel_displayed = true;
 var info_panel_displayed = true;
 
@@ -203,29 +205,35 @@ function draw() {
 }
 
 function displaySplashPanel() {
-    background(255);
-    stroke(0);
-    fill(255);
-    strokeWeight(1);
-    rect(0,0,width-1,height-1);
+  background(255);
+  stroke(0);
+  fill(255);
+  strokeWeight(1);
+  rect(0, 0, width - 1, height - 1);
 
-    // Blood
-    imageMode(CENTER);
-    image(img_blood,width*0.75,0)
+  // Blood
+  imageMode(CENTER);
+  image(img_blood, width * 0.75, 0);
 
-    // Jimmy
-    imageMode(CORNER);
-    image(img_title,100,height/2,img_title.width*0.4,img_title.height*0.4);
-    textSize(36);
-    textAlign(RIGHT);
-    noStroke();
-    fill("#fff");
-    text("Jimmy is sick",width-20,50);
+  // Jimmy
+  imageMode(CORNER);
+  image(
+    img_title,
+    100,
+    height / 2,
+    img_title.width * 0.4,
+    img_title.height * 0.4
+  );
+  textSize(36);
+  textAlign(RIGHT);
+  noStroke();
+  fill("#fff");
+  text("Jimmy is sick", width - 20, 50);
 
-    fill(0);
-    textSize(14);
-    textAlign(LEFT);
-    text("Click/tap to continue.",10,height-40);
+  fill(0);
+  textSize(14);
+  textAlign(LEFT);
+  text("Click/tap to continue.", 10, height - 40);
 }
 
 function mouseClicked() {
@@ -242,20 +250,20 @@ function mouseClicked() {
   // If a UI button catches the mouse click, return.
   if (intersectsUI(mouseX, mouseY)) {
     if (infected_chosen) {
-        if (selected_sector_is_contagious){
-            for (var i = 0; i < actionButtons.length; i++) {
-                // Don't use adjustedMouseX because the UI doesn't move
-                // in the same frame as the game field.
-                if (actionButtons[i].catchesClick(mouseX, mouseY)) {
-                    actionButtons[i].triggerAction();
-                    return;
-                 }
-            }
-        } else {
-            if (passButton.catchesClick(mouseX,mouseY)){
-                passButton.triggerAction();
-            }
+      if (selected_sector_is_contagious) {
+        for (var i = 0; i < actionButtons.length; i++) {
+          // Don't use adjustedMouseX because the UI doesn't move
+          // in the same frame as the game field.
+          if (actionButtons[i].catchesClick(mouseX, mouseY)) {
+            actionButtons[i].triggerAction();
+            return;
+          }
         }
+      } else {
+        if (passButton.catchesClick(mouseX, mouseY)) {
+          passButton.triggerAction();
+        }
+      }
     } else {
       if (chooseInfectedButton.catchesClick(mouseX, mouseY)) {
         chooseInfectedButton.triggerAction();
@@ -268,10 +276,10 @@ function mouseClicked() {
     if (!mouseJustDragged) {
       sector_status = gameGrid.selectSector();
       print("Selected Sector Status: " + sector_status);
-      if (sector_status == "contagious"){
-          selected_sector_is_contagious = true;
+      if (sector_status == "contagious") {
+        selected_sector_is_contagious = true;
       } else {
-          selected_sector_is_contagious = false;
+        selected_sector_is_contagious = false;
       }
       // TODO: If the sector is not contagious, hide the action buttons
     } else {
@@ -286,10 +294,10 @@ function calculateAdjustedMousePosition() {
 }
 
 function mouseDragged() {
-    // Don't start drags on the UI.
-    if (intersectsUI(mouseX, mouseY)){
-        return;
-    }
+  // Don't start drags on the UI.
+  if (intersectsUI(mouseX, mouseY)) {
+    return;
+  }
   offsetX = offsetX + (mouseX - pmouseX);
   offsetY = offsetY + (mouseY - pmouseY);
   mouseJustDragged = true;
@@ -320,13 +328,13 @@ function drawUI() {
 
   // Draw the action buttons
   if (infected_chosen) {
-      if (!selected_sector_is_contagious){
-        passButton.draw();
-      } else {
-        for (var i = 0; i < actionButtons.length; i++) {
-            actionButtons[i].draw();
-        }
+    if (!selected_sector_is_contagious) {
+      passButton.draw();
+    } else {
+      for (var i = 0; i < actionButtons.length; i++) {
+        actionButtons[i].draw();
       }
+    }
   } else if (!infected_chosen) {
     // Player needs to choose the infected person
     chooseInfectedButton.draw();
@@ -348,6 +356,9 @@ function triggerVomit() {
     if (secStatus == "contagious") {
       print("Vomiting");
       selectedSector.vomit();
+      if (!unlimited_moves && !disease.unlimited_vomit) {
+        selectedSector.limit_symptoms = true;
+      }
       advanceTurn();
     } else {
       print("Selected person is not contagious.");
@@ -361,6 +372,9 @@ function triggerCough() {
     if (secStatus == "contagious") {
       print("Coughing");
       selectedSector.cough();
+      if (!unlimited_moves && !disease.unlimited_cough) {
+        selectedSector.limit_symptoms = true;
+      }
       advanceTurn();
     } else {
       print("Selected person is not contagious.");
@@ -374,6 +388,9 @@ function triggerSneeze() {
     if (secStatus == "contagious") {
       print("Sneezing");
       selectedSector.sneeze();
+      if (!unlimited_moves && !disease.unlimited_sneeze) {
+        selectedSector.limit_symptoms = true;
+      }
       advanceTurn();
     } else {
       print("Selected person is not contagious.");
@@ -387,6 +404,9 @@ function triggerSpit() {
     if (secStatus == "contagious") {
       print("Spitting");
       selectedSector.spit();
+      if (!unlimited_moves && !disease.unlimited_spit) {
+        selectedSector.limit_symptoms = true;
+      }
       advanceTurn();
     } else {
       print("Selected person is not contagious.");
@@ -405,9 +425,9 @@ function triggerInfection() {
     infected_chosen = true;
     secStatus = selectedSector.getDiseaseStatus();
     print("  secStatus: " + secStatus);
-    while (secStatus != "contagious"){
-        selectedSector.disease_status += 1;
-        secStatus = selectedSector.getDiseaseStatus();
+    while (secStatus != "contagious") {
+      selectedSector.disease_status += 1;
+      secStatus = selectedSector.getDiseaseStatus();
     }
     selectedSector.updateImageUsed();
   } else {
@@ -420,10 +440,10 @@ function advanceTurn() {
   vomit_on_turn = false;
   gameGrid.advanceTurn();
 
-  if (selectedSector.getDiseaseStatus() == "contagious"){
-      selected_sector_is_contagious = true;
+  if (selectedSector.getDiseaseStatus() == "contagious") {
+    selected_sector_is_contagious = true;
   } else {
-      selected_sector_is_contagious = false;
+    selected_sector_is_contagious = false;
   }
 
   // Turn didn't register a vomit so reset the multiplier
@@ -651,55 +671,54 @@ function GameGrid(sector_dimension, sectors_wide, sectors_tall) {
 // Disease Class
 ////////////////
 function Disease(seed) {
-
   possible_names = [
-      "Prion Disease",
-      "Transmissible Spongiform Encephalopathies",
-      "African Trypanosomiasis",
-      "Cryptococcal Meningitis",
-      "Septicemic Plague",
-      "Pneumonic Plague",
-      "Rabies",
-      "Viceral Leishmaniasis",
-      "Fibrodysplasia Ossificans Progressiva",
-      "Primary Amoebic Meningoencephalitis",
-      "Septicemic Glanders",
-      "Hemorrhagic Variola Major",
-      "Granulomatous Amoebic Encephalitis",
-      "Ebola: Zaire Variant",
-      "Ebola: Sudan Variant",
-      "Anthrax",
-      "Invasive Pulmonary Aspergillosis",
-      "Cryptococcal Memingitis",
-      "Influenza A: H5N1",
-      "Bubonic Plague",
-      "Gastrointestinal Anthrax",
-      "Tetanus",
-      "Middle Eastern Respiratory Syndrome (MERS)",
-      "Hantavirus",
-      "Typhoidal Tularemia",
-      "Eastern Equine Encephalitis Virus",
-      "Ebola: Bundibugyo Variant",
-      "Varicella",
-      "Dengue Haemorrhagic Fever",
-      "Leptospirosis",
-      "Legionellosis",
-      "Meningococcal Disease",
-      "Typhoid Fever",
-      "Severe Acute Respiratory Syndrome (SARS)",
-      "Intestinal Capillariasis",
-      "Botulism",
-      "Diphtheria",
-      "Pertussis",
-      "Spanish Flu",
-      "Venezuelan Equine Encephalitis",
-      "Typhoid Fever",
-      "Malaria",
-      "Asian Flu",
-      "Hong Kong Flu"
-  ]
+    "Prion Disease",
+    "Transmissible Spongiform Encephalopathies",
+    "African Trypanosomiasis",
+    "Cryptococcal Meningitis",
+    "Septicemic Plague",
+    "Pneumonic Plague",
+    "Rabies",
+    "Viceral Leishmaniasis",
+    "Fibrodysplasia Ossificans Progressiva",
+    "Primary Amoebic Meningoencephalitis",
+    "Septicemic Glanders",
+    "Hemorrhagic Variola Major",
+    "Granulomatous Amoebic Encephalitis",
+    "Ebola: Zaire Variant",
+    "Ebola: Sudan Variant",
+    "Anthrax",
+    "Invasive Pulmonary Aspergillosis",
+    "Cryptococcal Memingitis",
+    "Influenza A: H5N1",
+    "Bubonic Plague",
+    "Gastrointestinal Anthrax",
+    "Tetanus",
+    "Middle Eastern Respiratory Syndrome (MERS)",
+    "Hantavirus",
+    "Typhoidal Tularemia",
+    "Eastern Equine Encephalitis Virus",
+    "Ebola: Bundibugyo Variant",
+    "Varicella",
+    "Dengue Haemorrhagic Fever",
+    "Leptospirosis",
+    "Legionellosis",
+    "Meningococcal Disease",
+    "Typhoid Fever",
+    "Severe Acute Respiratory Syndrome (SARS)",
+    "Intestinal Capillariasis",
+    "Botulism",
+    "Diphtheria",
+    "Pertussis",
+    "Spanish Flu",
+    "Venezuelan Equine Encephalitis",
+    "Typhoid Fever",
+    "Malaria",
+    "Asian Flu",
+    "Hong Kong Flu"
+  ];
 
-  choice = Math.floor(Math.random()*possible_names.length);
+  choice = Math.floor(Math.random() * possible_names.length);
 
   this.name = possible_names[choice];
   this.seed = seed;
@@ -778,7 +797,7 @@ function Disease(seed) {
     noStroke();
     rect(1, 1, width - 2, height - 2);
     fill("#8CDDFF");
-    rect(1,1,width - 2, height/3 - 1);
+    rect(1, 1, width - 2, height / 3 - 1);
     textAlign(LEFT);
 
     // Header
@@ -787,7 +806,7 @@ function Disease(seed) {
     text("CDC Report", 10, 50);
 
     textSize(18);
-    text(this.name,10,80);
+    text(this.name, 10, 80);
 
     // Incubation
     // TODO: Fix the issue where the incubation period and contagious period
@@ -795,13 +814,35 @@ function Disease(seed) {
     // This might mean adding an indicator for disease status for the player.
     base_height = 40;
     textSize(12);
-    text("Incubation period: " + (this.days_incubation - 1), 10, 60 + base_height);
+    text(
+      "Incubation period: " + (this.days_incubation - 1),
+      10,
+      60 + base_height
+    );
     text("Contagious period: " + this.days_contagious, 10, 75 + base_height);
-    text("Mortality Rate: " + parseInt(this.mortality_rate*100) + "%", 10, 90 + base_height);
-    text("Deaths exsanguinate: " + this.exanguination_upon_death, 10, 105 + base_height);
-    text("% of population immune: " + parseInt(this.percent_pop_immune*100) + "%", 10, 120 + base_height);
-    text("Severity of symptoms: " + parseInt(this.severity*100) + "/100", 10, 135 + base_height);
-    
+    text(
+      "Mortality Rate: " + parseInt(this.mortality_rate * 100) + "%",
+      10,
+      90 + base_height
+    );
+    text(
+      "Deaths exsanguinate: " + this.exanguination_upon_death,
+      10,
+      105 + base_height
+    );
+    text(
+      "% of population immune: " +
+        parseInt(this.percent_pop_immune * 100) +
+        "%",
+      10,
+      120 + base_height
+    );
+    text(
+      "Severity of symptoms: " + parseInt(this.severity * 100) + "/100",
+      10,
+      135 + base_height
+    );
+
     if (this.unlimited_cough) {
       text("Most common symptom: coughing", 10, 150 + base_height);
     } else if (this.unlimited_sneeze) {
@@ -814,58 +855,102 @@ function Disease(seed) {
 
     noFill();
     stroke(0);
-    line(0,height/3,width,height/3);
+    line(0, height / 3, width, height / 3);
     noStroke();
     fill(0);
     textSize(11);
-    text("Jimmy is sick!\n" +
-         "Help him spread the disease!\n\n" +
-         "Your tasks are as follows:\n" +
-         "1. Tell us who Jimmy is by clicking on a person and clicking select.\n" +
-         "2. Use the symptom buttons at the bottom to spread the disease. You can\n" +
-         "   select any person on the board by click on them. When you select a person\n" +
-         "   that is contagious, the symptom buttons will appear at the bottom.\n" +
-         "3. Try to infect as many people as you can as quickly as possible.\n\n" +
 
-         "About the symptoms:\n" +
-         "The TARGET is the person that the selected contagious person is facing.\n" +
-         " - Cough infects the target.\n" +
-         " - Sneeze infects the target AND healthy people adjacent to the target.\n" +
-         " - Spit infects the person beyond the target.\n" +
-         " - Vomit infects the target and primes them to vomit on the first turn\n" +
-         "   they are contagious. Use this to create chain vomit reactions!\n\n" +
-
-         "Depending on the disease, some symptoms are more prevalent than others.",10,height/2.8);
+    textAlign(RIGHT);
+    text(
+      "Drag the mouse to see\nthe entire game board!",
+      width - 5,
+      height / 2.8
+    );
+    textAlign(LEFT);
+    text(
+      "Jimmy is sick!\n" +
+        "Help him spread the disease!\n\n" +
+        "Your tasks are as follows:\n" +
+        "1. Tell us who Jimmy is by clicking on a person and clicking select.\n" +
+        "2. Use the symptom buttons at the bottom to spread the disease. You can\n" +
+        "   select any person on the board by click on them. When you select a person\n" +
+        "   that is contagious, the symptom buttons will appear at the bottom.\n" +
+        "3. Try to infect as many people as you can as quickly as possible.\n\n" +
+        "About the symptoms:\n" +
+        "The TARGET is the person that the selected contagious person is facing.\n" +
+        " - Cough infects the target.\n" +
+        " - Sneeze infects the target AND healthy people adjacent to the target.\n" +
+        " - Spit infects the person beyond the target.\n" +
+        " - Vomit infects the target and primes them to vomit on the first turn\n" +
+        "   they are contagious. Use this to create chain vomit reactions!\n\n" +
+        "Depending on the disease, some symptoms are more prevalent than others.",
+      10,
+      height / 2.8
+    );
 
     textAlign(CENTER);
     fill(0);
 
     // Show people and explanatory text
     imageMode(CORNER);
-    key_width = img_state_default.width*0.3;
-    key_height = img_state_default.height*0.3;
-    key_ypos = height/1.25;
-    key_text_ypos = height/1.1;
+    key_width = img_state_default.width * 0.3;
+    key_height = img_state_default.height * 0.3;
+    key_ypos = height / 1.25;
+    key_text_ypos = height / 1.1;
 
     key_offset = 20;
 
-    image(img_state_default,key_offset,key_ypos,key_width,key_height);
-    text("healthy",key_offset+key_width/2,key_text_ypos);
+    image(img_state_default, key_offset, key_ypos, key_width, key_height);
+    text("healthy", key_offset + key_width / 2, key_text_ypos);
 
-    image(img_state_infected,key_offset+(1*key_width),key_ypos,key_width,key_height);
-    text("infected",key_offset+key_width*3/2,key_text_ypos);
+    image(
+      img_state_infected,
+      key_offset + 1 * key_width,
+      key_ypos,
+      key_width,
+      key_height
+    );
+    text("infected", key_offset + key_width * 3 / 2, key_text_ypos);
 
-    image(img_state_infected_vomit,key_offset+(2*key_width),key_ypos,key_width,key_height);
-    text("infected\nwill vomit",key_offset+key_width*5/2,key_text_ypos);
+    image(
+      img_state_infected_vomit,
+      key_offset + 2 * key_width,
+      key_ypos,
+      key_width,
+      key_height
+    );
+    text("infected\nwill vomit", key_offset + key_width * 5 / 2, key_text_ypos);
 
-    image(img_state_contagious,key_offset+(3*key_width),key_ypos,key_width,key_height);
-    text("contagious",key_offset+key_width*7/2,key_text_ypos);
+    image(
+      img_state_contagious,
+      key_offset + 3 * key_width,
+      key_ypos,
+      key_width,
+      key_height
+    );
+    text("contagious", key_offset + key_width * 7 / 2, key_text_ypos);
 
-    image(img_state_contagious_vomit,key_offset+(4*key_width),key_ypos,key_width,key_height);
-    text("contagious\nwill vomit",key_offset+key_width*9/2,key_text_ypos);
+    image(
+      img_state_contagious_vomit,
+      key_offset + 4 * key_width,
+      key_ypos,
+      key_width,
+      key_height
+    );
+    text(
+      "contagious\nwill vomit",
+      key_offset + key_width * 9 / 2,
+      key_text_ypos
+    );
 
-    image(img_state_immune,key_offset+(5*key_width),key_ypos,key_width,key_height);
-    text("immune",key_offset+key_width*11/2,key_text_ypos);
+    image(
+      img_state_immune,
+      key_offset + 5 * key_width,
+      key_ypos,
+      key_width,
+      key_height
+    );
+    text("immune", key_offset + key_width * 11 / 2, key_text_ypos);
 
     textSize(14);
     text("Click or tap to continue...", width / 2, height - 15);
@@ -888,6 +973,7 @@ function Sector(xcoord, ycoord, dimension) {
   this.centerY = this.y + this.dimension / 2;
   this.img = img_state_default;
   this.facing = Math.floor(Math.random() * DIRECTIONS.length);
+  this.limit_symptoms = false;
 
   // Use the current disease to set some parameters for
   // this sector
@@ -1038,6 +1124,10 @@ function Sector(xcoord, ycoord, dimension) {
   };
 
   this.cough = function() {
+    if (!unlimited_moves && !disease.unlimited_cough && this.limit_symptoms) {
+      print("Sector.cough: This person already used a limited move!");
+      return;
+    }
     current_direction = DIRECTIONS_LOOKUP[this.facing];
     target = this.coordinatesToAttack(current_direction);
     targetX = target[0];
@@ -1077,6 +1167,10 @@ function Sector(xcoord, ycoord, dimension) {
   };
 
   this.sneeze = function() {
+    if (!unlimited_moves && !disease.unlimited_sneeze && this.limit_symptoms) {
+      print("Sector.sneeze: This person already used a limited move!");
+      return;
+    }
     current_direction = DIRECTIONS_LOOKUP[this.facing];
     primary_target = this.coordinatesToAttack(current_direction);
     if (gameGrid.validCoord(primary_target[0], primary_target[1])) {
@@ -1143,6 +1237,10 @@ function Sector(xcoord, ycoord, dimension) {
   };
 
   this.spit = function() {
+    if (!unlimited_moves && !disease.unlimited_spit && this.limit_symptoms) {
+      print("Sector.spit: This person already used a limited move!");
+      return;
+    }
     current_direction = DIRECTIONS_LOOKUP[this.facing];
     skip_sector_coords = this.coordinatesToAttack(current_direction);
 
@@ -1194,6 +1292,10 @@ function Sector(xcoord, ycoord, dimension) {
   };
 
   this.vomit = function() {
+    if (!unlimited_moves && !disease.unlimited_vomit && this.limit_symptoms) {
+      print("Sector.vomit: This person already used a limited move!");
+      return;
+    }
     // TODO: Register graphic with the gamegrid
     current_direction = DIRECTIONS_LOOKUP[this.facing];
     target = this.coordinatesToAttack(current_direction);
