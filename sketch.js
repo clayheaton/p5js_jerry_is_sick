@@ -430,9 +430,9 @@ function calculateAdjustedMousePosition() {
   adjustedMouseY = mouseY - offsetY;
 }
 
-function touchEnded() {
-    mouseClicked();
-}
+// function touchEnded() {
+//     mouseClicked();
+// }
 
 
 function mouseDragged() {
