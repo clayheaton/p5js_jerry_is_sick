@@ -1,3 +1,5 @@
+var seed = 1;
+
 var offsetX = 0;
 var offsetY = 0;
 
@@ -70,6 +72,7 @@ var unlimited_moves = false;
 
 var splash_panel_displayed = true;
 var info_panel_displayed = true;
+var game_over_screen_displayed = false;
 
 function preload() {
   img_title = loadImage("art/img_title@2x.png");
@@ -112,10 +115,43 @@ function setup() {
   canvas.parent("canvasHolder");
   background("#122B40");
 
-  randomSeed(1);
-  
+  randomSeed(seed);
+  establishGame();
+  angleMode(RADIANS);
+  drawUI();
+}
+
+function establishGame(randomizeSeed) {
+    if (randomizeSeed){
+        seed = Math.floor(Math.random() * 100000);
+    }
+
+    randomSeed(seed);
+
+  // Reinitialize some variables
+    offsetX = 0;
+    offsetY = 0;
+    infected_chosen = false;
+    turn_count = 0;
+    score = 0;
+    splash_panel_displayed = true; 
+    info_panel_displayed = true;
+    game_over_screen_displayed = false;
+    vomit_on_turn = false;
+    vomit_score_multiplier = 1;
+
   // Generate the disease
+  disease = null;
   disease = new Disease(123);
+
+  // Initialize the actionButton array.
+  actionButtons = [];
+
+  passButton = null;
+  coughButton = null;
+  sneezeButton = null;
+  spitButton = null;
+  vomitButton = null;
 
   // Create the UI Buttons.
   passButton = new ActionButton(
@@ -189,16 +225,8 @@ function setup() {
   actionButtons.push(spitButton);
   actionButtons.push(vomitButton);
 
+  gameGrid = null;
   gameGrid = new GameGrid(sectorDim, sectorsWide, sectorsTall);
-  angleMode(RADIANS);
-  drawUI();
-
-  // Calculate the initial offset of the view
-  //
-  // offsetX = (sectorsWide * sectorDim)/4;
-  // offsetY = (sectorsTall * sectorDim)/4;
-
-  // Find center point of middle sector. Offset is origin to that point
 }
 
 function draw() {
@@ -216,7 +244,15 @@ function draw() {
     disease.drawDiseaseInfoPanel();
   } else {
     gameGrid.draw();
-    drawUI();
+    if (game_over_screen_displayed){
+        drawGameOverUI();
+    } else {
+        drawUI();
+    }
+    
+    if (!game_over_screen_displayed && gameGrid.gameIsOver()){
+        game_over_screen_displayed = true;
+    }
   }
 }
 
@@ -255,7 +291,28 @@ function displaySplashPanel() {
   fill(0);
   textSize(14);
   textAlign(LEFT);
-  text("Click/tap to continue.", 10, height - 40);
+  text("Click to continue.", 10, height - 40);
+}
+
+function drawGameOverUI() {
+    noStroke();
+    fill("#7B292C");
+    rect(0,height*4/5,width,height*1/5);
+
+    textAlign(LEFT);
+    fill(255);
+    text("Game Over!\nTurns: " + turn_count + "\nScore: " + score,20,height*4/5 + 20);
+
+    rect(width*3/5,height*4/5 + 10,100,40);
+    fill(0);
+    textAlign(CENTER);
+    text("Replay Game",width*3/5 + 50,height*4/5 + 35);
+
+    fill(255);
+    rect(width*3/5,height*4/5 + 70,100,40);
+    fill(0);
+    textAlign(CENTER);
+    text("New Game",width*3/5 + 50,height*4/5 + 95);
 }
 
 function mouseClicked() {
@@ -263,6 +320,23 @@ function mouseClicked() {
   if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height){
       return;
   }
+
+  if (game_over_screen_displayed){
+      // Replay button
+    if (mouseX >= width*3/5 && mouseX <= width*3/5 + 100 &&
+        mouseY >= height*4/5 + 20 && mouseY <= height*4/5 + 50){
+            print("Clicked Replay Button");
+            establishGame(false);
+            return;
+        }
+    if (mouseX >= width*3/5 && mouseX <= width*3/5 + 100 &&
+        mouseY >= height*4/5 + 70 && mouseY <= height*4/5 + 110){
+            print("Clicked New Game Button");
+            establishGame(true);
+            return;
+        }
+  }
+
   if (splash_panel_displayed) {
     splash_panel_displayed = false;
     return;
@@ -274,7 +348,7 @@ function mouseClicked() {
     return;
   }
   // If a UI button catches the mouse click, return.
-  if (intersectsUI(mouseX, mouseY)) {
+  if (intersectsUI(mouseX, mouseY) && !game_over_screen_displayed) {
     if (infected_chosen) {
       if (selected_sector_is_contagious) {
           if (!unlimited_moves){
@@ -356,9 +430,14 @@ function calculateAdjustedMousePosition() {
   adjustedMouseY = mouseY - offsetY;
 }
 
+function touchEnded() {
+    mouseClicked();
+}
+
+
 function mouseDragged() {
   // Don't start drags on the UI.
-  if (intersectsUI(mouseX, mouseY)) {
+  if (intersectsUI(mouseX, mouseY) || mouseX > width || mouseX < 0) {
     return;
   }
   offsetX = offsetX + (mouseX - pmouseX);
@@ -583,6 +662,24 @@ function GameGrid(sector_dimension, sectors_wide, sectors_tall) {
     }
   }
 
+  this.gameIsOver = function(){
+      if (!infected_chosen){
+          return false;
+      } else {
+        for (var i = 0; i < this.sectors_tall; i++) {
+            for (var j = 0; j < this.sectors_wide; j++) {
+                s = this.sectors[i][j];
+                // TODO HERE!!!
+                secStatus = disease.disease_progression[s.disease_status];
+                if (secStatus == "infected" || secStatus == "contagious"){
+                    return false;
+                }
+            }
+        }
+      }
+    return true;
+  }
+
   this.validCoord = function(x, y) {
     if (x >= 0 && x < sectorsWide && y >= 0 && y < sectorsTall) {
       return true;
@@ -778,7 +875,7 @@ function Disease(seed) {
     "Ebola: Sudan Variant",
     "Anthrax",
     "Invasive Pulmonary Aspergillosis",
-    "Cryptococcal Memingitis",
+    "Cryptococcal Meningitis",
     "Influenza A: H5N1",
     "Bubonic Plague",
     "Gastrointestinal Anthrax",
@@ -807,25 +904,25 @@ function Disease(seed) {
     "Hong Kong Flu"
   ];
 
-  choice = Math.floor(Math.random() * possible_names.length);
+  choice = Math.floor(random() * possible_names.length);
 
   this.name = possible_names[choice];
   this.seed = seed;
-  this.days_incubation = Math.floor(Math.random() * 4) + 2; // 2-5
-  this.days_contagious = Math.floor(Math.random() * 4) + 3; // 3-7
-  this.mortality_rate = (Math.floor(Math.random() * 30) + 1) / 100; // was 0.15
-  this.percent_pop_immune = (Math.floor(Math.random() * 20) + 1) / 100;
+  this.days_incubation = Math.floor(random() * 4) + 2; // 2-5
+  this.days_contagious = Math.floor(random() * 4) + 3; // 3-7
+  this.mortality_rate = (Math.floor(random() * 30) + 1) / 100; // was 0.15
+  this.percent_pop_immune = (Math.floor(random() * 20) + 1) / 100;
 
   // Maps to mobility. The more severe,
   // the less somebody can move.
   // The more severe, the fewer people
   // on the board who spin.
   // Another name: this.rotation_rate
-  this.severity = (Math.floor(Math.random() * 40) + 30) / 100; // was 0.6
+  this.severity = (Math.floor(random() * 40) + 30) / 100; // was 0.6
   this.exanguination_upon_death = true;
 
   // How max of how many turns until a rotation occurs
-  this.turns_until_rotate = Math.floor(Math.random() * 4) + 2; // was 3
+  this.turns_until_rotate = Math.floor(random() * 4) + 2; // was 3
 
   // Generate values procedurally
   // Global means there's a certain count
@@ -850,7 +947,7 @@ function Disease(seed) {
   this.unlimited_spit = false;
   this.unlimited_vomit = false;
 
-  unlimited_number = Math.floor(Math.random() * 4);
+  unlimited_number = Math.floor(random() * 4);
   print(unlimited_number);
 
   switch (unlimited_number) {
@@ -1042,7 +1139,7 @@ function Disease(seed) {
     text("immune", key_offset + key_width * 11 / 2, key_text_ypos);
 
     textSize(14);
-    text("Click or tap to continue...", width / 2, height - 15);
+    text("Click to continue...", width / 2, height - 15);
   };
 }
 
@@ -1061,7 +1158,7 @@ function Sector(xcoord, ycoord, dimension) {
   this.centerX = this.x + this.dimension / 2;
   this.centerY = this.y + this.dimension / 2;
   this.img = img_state_default;
-  this.facing = Math.floor(Math.random() * DIRECTIONS.length);
+  this.facing = Math.floor(random() * DIRECTIONS.length);
   this.limit_symptoms = false;
 
   // Use the current disease to set some parameters for
@@ -1073,7 +1170,7 @@ function Sector(xcoord, ycoord, dimension) {
   this.remaining_spits = 0;
   this.remaining_vomits = 0;
   this.rotates = false;
-  this.segments_to_rotate = Math.random();
+  this.segments_to_rotate = random();
   if (this.segments_to_rotate > 0.5) {
     this.segments_to_rotate = 1;
   } else {
@@ -1081,7 +1178,7 @@ function Sector(xcoord, ycoord, dimension) {
   }
   this.rotation_turn_counter = 0;
   this.rotation_on_turn =
-    Math.floor(Math.random() * disease.turns_until_rotate) + 1;
+    Math.floor(random() * disease.turns_until_rotate) + 1;
   this.dies_from_disease = false;
   this.rotation_indicator =
     (this.rotation_turn_counter + 1) / this.rotation_on_turn;
@@ -1089,7 +1186,7 @@ function Sector(xcoord, ycoord, dimension) {
 
   // TODO: Use this.coveredWithBarf to trigger vomiting the next turn
 
-  if (Math.random() < disease.percent_pop_immune) {
+  if (random() < disease.percent_pop_immune) {
     this.immune = true;
     this.img = img_state_immune;
     this.disease_status = disease.disease_progression.length - 1;
@@ -1107,13 +1204,13 @@ function Sector(xcoord, ycoord, dimension) {
     if (!disease.global_vomit) {
       this.remaining_vomits = disease.vomit_count;
     }
-    if (Math.random() > disease.severity) {
+    if (random() > disease.severity) {
       this.rotates = true;
     } else {
       // Don't show a bar for rotation
       this.rotation_indicator = 0;
     }
-    if (Math.random() < disease.mortality_rate) {
+    if (random() < disease.mortality_rate) {
       this.dies_from_disease = true;
     }
   }
@@ -1721,6 +1818,9 @@ function ActionButton(x, y, dim, color, label, actionCallback, textYOffset) {
     if (this.highlight){
         stroke("#FFF");
         strokeWeight(3);
+    } else {
+        noStroke();
+        strokeWeight(1);
     }
     ellipseMode(CENTER);
     ellipse(this.x, this.y, this.dim, this.dim);
