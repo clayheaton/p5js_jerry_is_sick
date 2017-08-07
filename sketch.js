@@ -396,7 +396,7 @@ function drawGameOverUI() {
     rect(width*1/2,height*4/5 + 10,100,40);
     fill(0);
     textAlign(CENTER);
-    text("Replay Game",width*1/2 + 50,height*4/5 + 35);
+    text("Replay Level",width*1/2 + 50,height*4/5 + 35);
 
     // Works for random or campaign
     fill(255);
