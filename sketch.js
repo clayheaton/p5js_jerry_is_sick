@@ -1,5 +1,5 @@
-var originalSeed = 1;
-var seed = 1;
+var originalSeed = 100;
+var seed = 100;
 
 var offsetX = 0;
 var offsetY = 0;
@@ -95,6 +95,54 @@ var splash_panel_displayed = true;
 var info_panel_displayed = true;
 var game_over_screen_displayed = false;
 
+
+POSSIBLE_DISEASE_NAMES = [
+    "Prion Disease",
+    "Transmissible Spongiform Encephalopathies",
+    "African Trypanosomiasis",
+    "Cryptococcal Meningitis",
+    "Septicemic Plague",
+    "Pneumonic Plague",
+    "Rabies",
+    "Viceral Leishmaniasis",
+    "Fibrodysplasia Ossificans Progressiva",
+    "Primary Amoebic Meningoencephalitis",
+    "Septicemic Glanders",
+    "Hemorrhagic Variola Major",
+    "Granulomatous Amoebic Encephalitis",
+    "Ebola: Zaire Variant",
+    "Ebola: Sudan Variant",
+    "Anthrax",
+    "Invasive Pulmonary Aspergillosis",
+    "Cryptococcal Meningitis",
+    "Influenza A: H5N1",
+    "Bubonic Plague",
+    "Gastrointestinal Anthrax",
+    "Tetanus",
+    "Middle Eastern Respiratory Syndrome (MERS)",
+    "Hantavirus",
+    "Typhoidal Tularemia",
+    "Eastern Equine Encephalitis Virus",
+    "Ebola: Bundibugyo Variant",
+    "Varicella",
+    "Dengue Haemorrhagic Fever",
+    "Leptospirosis",
+    "Legionellosis",
+    "Meningococcal Disease",
+    "Typhoid Fever",
+    "Severe Acute Respiratory Syndrome (SARS)",
+    "Intestinal Capillariasis",
+    "Botulism",
+    "Diphtheria",
+    "Pertussis",
+    "Spanish Flu",
+    "Venezuelan Equine Encephalitis",
+    "Typhoid Fever",
+    "Malaria",
+    "Asian Flu",
+    "Hong Kong Flu"
+  ];
+
 // This function loads in art assets before
 // the setup begins. 
 function preload() {
@@ -123,22 +171,26 @@ function setup() {
 }
 
 function establishGame(gameType) {
-    if (gameType == "random"){
-        seed = Math.floor(Math.random() * 100000);
-        randomSeed(seed);
-        splash_panel_displayed = true; 
-    } else if (gameType == "new_campaign"){
-      seed = originalSeed;
-      randomSeed(seed);
-    } else if (gameType == "replay"){
-        randomSeed(seed);
-        splash_panel_displayed = false; 
-    } else if (gameType == "nextLevel"){
-      // For continuing in campaign mode
-      seed += 1;
-      random(seed);
-      splash_panel_displayed = false; 
-    }
+  if (gameType == "random") {
+    seed = Math.floor(Math.random() * 100000);
+    print("random Seed: " + seed);
+    randomSeed(seed);
+    splash_panel_displayed = true;
+  } else if (gameType == "new_campaign") {
+    seed = originalSeed;
+    print("new_campaign Seed: " + seed);
+    randomSeed(seed);
+  } else if (gameType == "replay") {
+    print("replay Seed: " + seed);
+    randomSeed(seed);
+    splash_panel_displayed = false;
+  } else if (gameType == "nextLevel") {
+    // For continuing in campaign mode
+    seed += 187;
+    print("nextLevel Seed: " + seed);
+    randomSeed(seed);
+    splash_panel_displayed = false;
+  }
 
   // Reinitialize some variables
     offsetX = 0;
@@ -152,8 +204,8 @@ function establishGame(gameType) {
     vomit_score_multiplier = 1;
 
   // Generate the disease
-  disease = null;
-  disease = new Disease(123);
+  // disease = null;
+  disease = new Disease();
 
   // Initialize the actionButton array.
   actionButtons = [];
@@ -944,61 +996,17 @@ function GameGrid(sector_dimension, sectors_wide, sectors_tall) {
   };
 }
 
+function getRandomGameName(){
+  var n = POSSIBLE_DISEASE_NAMES[Math.floor(random() * POSSIBLE_DISEASE_NAMES.length)];
+  return n;
+}
+
 ////////////////
 // Disease Class
 ////////////////
-function Disease(seed) {
-  possible_names = [
-    "Prion Disease",
-    "Transmissible Spongiform Encephalopathies",
-    "African Trypanosomiasis",
-    "Cryptococcal Meningitis",
-    "Septicemic Plague",
-    "Pneumonic Plague",
-    "Rabies",
-    "Viceral Leishmaniasis",
-    "Fibrodysplasia Ossificans Progressiva",
-    "Primary Amoebic Meningoencephalitis",
-    "Septicemic Glanders",
-    "Hemorrhagic Variola Major",
-    "Granulomatous Amoebic Encephalitis",
-    "Ebola: Zaire Variant",
-    "Ebola: Sudan Variant",
-    "Anthrax",
-    "Invasive Pulmonary Aspergillosis",
-    "Cryptococcal Meningitis",
-    "Influenza A: H5N1",
-    "Bubonic Plague",
-    "Gastrointestinal Anthrax",
-    "Tetanus",
-    "Middle Eastern Respiratory Syndrome (MERS)",
-    "Hantavirus",
-    "Typhoidal Tularemia",
-    "Eastern Equine Encephalitis Virus",
-    "Ebola: Bundibugyo Variant",
-    "Varicella",
-    "Dengue Haemorrhagic Fever",
-    "Leptospirosis",
-    "Legionellosis",
-    "Meningococcal Disease",
-    "Typhoid Fever",
-    "Severe Acute Respiratory Syndrome (SARS)",
-    "Intestinal Capillariasis",
-    "Botulism",
-    "Diphtheria",
-    "Pertussis",
-    "Spanish Flu",
-    "Venezuelan Equine Encephalitis",
-    "Typhoid Fever",
-    "Malaria",
-    "Asian Flu",
-    "Hong Kong Flu"
-  ];
-
-  choice = Math.floor(random() * possible_names.length);
-
-  this.name = possible_names[choice];
-  this.seed = seed;
+function Disease() {
+  
+  this.disease_name = getRandomGameName();
   this.days_incubation = Math.floor(random() * 4) + 2; // 2-5
   this.days_contagious = Math.floor(random() * 4) + 3; // 3-7
   this.mortality_rate = (Math.floor(random() * 30) + 1) / 100; // was 0.15
@@ -1039,7 +1047,6 @@ function Disease(seed) {
   this.unlimited_vomit = false;
 
   unlimited_number = Math.floor(random() * 4);
-  print(unlimited_number);
 
   switch (unlimited_number) {
     case 0:
@@ -1083,7 +1090,7 @@ function Disease(seed) {
     text("CDC Report", 10, 50);
 
     textSize(18);
-    text(this.name, 10, 80);
+    text(this.disease_name, 10, 80);
 
     // Incubation
     // TODO: Fix the issue where the incubation period and contagious period
