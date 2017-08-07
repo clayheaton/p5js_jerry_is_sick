@@ -225,6 +225,8 @@ function establishGame(randomizeSeed) {
   actionButtons.push(spitButton);
   actionButtons.push(vomitButton);
 
+  selected_sector_is_contagious = true;
+  selectedSector = null;
   gameGrid = null;
   gameGrid = new GameGrid(sectorDim, sectorsWide, sectorsTall);
 }
