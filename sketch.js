@@ -162,7 +162,7 @@ function preload() {
 }
 
 function setup() {
-  var canvas = createCanvas(400, 600);
+  var canvas = createCanvas(600, 600);
   canvas.parent("canvasHolder");
   background("#122B40");
 
@@ -217,8 +217,13 @@ function establishGame(gameType) {
   vomitButton = null;
 
   // Create the UI Buttons.
+
+  // 5 buttons, so determine the layout automatically
+  var buttonSpace = width / 5.0;
+  var buttonOffset = buttonSpace / 2.0;
+
   passButton = new ActionButton(
-    50,
+    (buttonOffset + (0*buttonSpace)),
     height - uiHeight / 2,
     50,
     100,
@@ -226,7 +231,7 @@ function establishGame(gameType) {
     triggerPass
   );
   coughButton = new ActionButton(
-    125,
+    (buttonOffset + (1*buttonSpace)),
     height - uiHeight / 2,
     50,
     "#0088CC",
@@ -234,7 +239,7 @@ function establishGame(gameType) {
     triggerCough
   );
   sneezeButton = new ActionButton(
-    200,
+    (buttonOffset + (2*buttonSpace)),
     height - uiHeight / 2,
     50,
     "#56B770",
@@ -242,7 +247,7 @@ function establishGame(gameType) {
     triggerSneeze
   );
   spitButton = new ActionButton(
-    275,
+    (buttonOffset + (3*buttonSpace)),
     height - uiHeight / 2,
     50,
     "#7C789D",
@@ -250,7 +255,7 @@ function establishGame(gameType) {
     triggerSpit
   );
   vomitButton = new ActionButton(
-    350,
+    (buttonOffset + (4*buttonSpace)),
     height - uiHeight / 2,
     50,
     "#E51870",
@@ -258,8 +263,10 @@ function establishGame(gameType) {
     triggerVomit
   );
 
+
+
   chooseInfectedButton = new ActionButton(
-    200,
+    width/2,
     height - uiHeight / 2,
     50,
     "#A61600",
