@@ -1,1 +1,1 @@
-### p5.js game prototype
+### Jimmy Is Sick
