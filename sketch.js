@@ -1,3 +1,4 @@
+var originalSeed = 1;
 var seed = 1;
 
 var offsetX = 0;
@@ -40,8 +41,6 @@ var img_spit;
 var img_vomit;
 var img_blood;
 
-var DIRECTIONS = [];
-var DIRECTIONS_LOOKUP = {};
 var DIRECTION_N = Math.PI * 2;
 var DIRECTION_NW = Math.PI * 2 - Math.PI / 4;
 var DIRECTION_W = Math.PI * 2 - Math.PI / 2;
@@ -50,6 +49,27 @@ var DIRECTION_S = Math.PI;
 var DIRECTION_SE = Math.PI - Math.PI / 4;
 var DIRECTION_E = Math.PI / 2;
 var DIRECTION_NE = Math.PI / 4;
+
+var  DIRECTIONS = [
+    DIRECTION_E,
+    DIRECTION_NE,
+    DIRECTION_N,
+    DIRECTION_NW,
+    DIRECTION_W,
+    DIRECTION_SW,
+    DIRECTION_S,
+    DIRECTION_SE
+  ];
+
+var DIRECTIONS_LOOKUP = {};
+DIRECTIONS_LOOKUP[0] = "east";
+DIRECTIONS_LOOKUP[1] = "northeast";
+DIRECTIONS_LOOKUP[2] = "north";
+DIRECTIONS_LOOKUP[3] = "northwest";
+DIRECTIONS_LOOKUP[4] = "west";
+DIRECTIONS_LOOKUP[5] = "southwest";
+DIRECTIONS_LOOKUP[6] = "south";
+DIRECTIONS_LOOKUP[7] = "southeast";
 
 var STATE_HEALTHY = 0;
 var STATE_INFECTED = 1;
@@ -70,10 +90,13 @@ var cough_points = 1;
 
 var unlimited_moves = false;
 
+var campaign_mode = false;
 var splash_panel_displayed = true;
 var info_panel_displayed = true;
 var game_over_screen_displayed = false;
 
+// This function loads in art assets before
+// the setup begins. 
 function preload() {
   img_title = loadImage("art/img_title@2x.png");
   img_state_default = loadImage("art/state_default@2x.png");
@@ -88,26 +111,6 @@ function preload() {
   img_spit = loadImage("art/spit@2x.png");
   img_vomit = loadImage("art/vomit@2x.png");
   img_blood = loadImage("art/blood@2x.png");
-
-  DIRECTIONS = [
-    DIRECTION_E,
-    DIRECTION_NE,
-    DIRECTION_N,
-    DIRECTION_NW,
-    DIRECTION_W,
-    DIRECTION_SW,
-    DIRECTION_S,
-    DIRECTION_SE
-  ];
-
-  DIRECTIONS_LOOKUP[0] = "east";
-  DIRECTIONS_LOOKUP[1] = "northeast";
-  DIRECTIONS_LOOKUP[2] = "north";
-  DIRECTIONS_LOOKUP[3] = "northwest";
-  DIRECTIONS_LOOKUP[4] = "west";
-  DIRECTIONS_LOOKUP[5] = "southwest";
-  DIRECTIONS_LOOKUP[6] = "south";
-  DIRECTIONS_LOOKUP[7] = "southeast";
 }
 
 function setup() {
@@ -115,18 +118,27 @@ function setup() {
   canvas.parent("canvasHolder");
   background("#122B40");
 
-  randomSeed(seed);
-  establishGame();
   angleMode(RADIANS);
   drawUI();
 }
 
-function establishGame(randomizeSeed) {
-    if (randomizeSeed){
+function establishGame(gameType) {
+    if (gameType == "random"){
         seed = Math.floor(Math.random() * 100000);
+        randomSeed(seed);
+        splash_panel_displayed = true; 
+    } else if (gameType == "new_campaign"){
+      seed = originalSeed;
+      randomSeed(seed);
+    } else if (gameType == "replay"){
+        randomSeed(seed);
+        splash_panel_displayed = false; 
+    } else if (gameType == "nextLevel"){
+      // For continuing in campaign mode
+      seed += 1;
+      random(seed);
+      splash_panel_displayed = false; 
     }
-
-    randomSeed(seed);
 
   // Reinitialize some variables
     offsetX = 0;
@@ -134,7 +146,6 @@ function establishGame(randomizeSeed) {
     infected_chosen = false;
     turn_count = 0;
     score = 0;
-    splash_panel_displayed = true; 
     info_panel_displayed = true;
     game_over_screen_displayed = false;
     vomit_on_turn = false;
@@ -292,8 +303,32 @@ function displaySplashPanel() {
 
   fill(0);
   textSize(14);
-  textAlign(LEFT);
-  text("Click to continue.", 10, height - 40);
+  // textAlign(LEFT);
+  // text("Click to continue.", 10, height - 40);
+
+  // TODO: Add buttons for "campaign" vs. random
+  // Loss conditions? Infect at least n people
+  // Score as people infected
+  // Mark certain people as "must infect" and give
+  // the player goals to try to get them.
+
+  // Campaign
+  fill(255);
+  stroke(0);
+  rect(20,height*4/5,100,40);
+  fill(0);
+  noStroke();
+  textAlign(CENTER);
+  text("Play Campaign",20 + 50,height*4/5 + 25);
+
+    // Random
+  fill(255);
+  stroke(0);
+  rect(20,height*4/5 + 60,100,40);
+  fill(0);
+  noStroke();
+  text("Play Random",20 + 50,height*4/5 + 85);
+
 }
 
 function drawGameOverUI() {
@@ -305,16 +340,28 @@ function drawGameOverUI() {
     fill(255);
     text("Game Over!\nTurns: " + turn_count + "\nScore: " + score,20,height*4/5 + 20);
 
-    rect(width*3/5,height*4/5 + 10,100,40);
+    // Works for random or campaign
+    rect(width*1/2,height*4/5 + 10,100,40);
     fill(0);
     textAlign(CENTER);
-    text("Replay Game",width*3/5 + 50,height*4/5 + 35);
+    text("Replay Game",width*1/2 + 50,height*4/5 + 35);
 
+    // Works for random or campaign
     fill(255);
-    rect(width*3/5,height*4/5 + 70,100,40);
+    rect(width*1/2,height*4/5 + 70,100,40);
     fill(0);
     textAlign(CENTER);
-    text("New Game",width*3/5 + 50,height*4/5 + 95);
+    text("New Game",width*1/2 + 50,height*4/5 + 95);
+
+    // For campaign only
+    if (campaign_mode){
+      // Works for random or campaign
+      fill(255);
+      rect(width*1/2 + 110,height*4/5 + 10,80,100);
+      fill(0);
+      textAlign(CENTER);
+      text("Next\nLevel!",width*1/2 + 150,height*4/5 + 55);
+    }
 }
 
 function mouseClicked() {
@@ -323,26 +370,64 @@ function mouseClicked() {
       return;
   }
 
-  if (game_over_screen_displayed){
-      // Replay button
-    if (mouseX >= width*3/5 && mouseX <= width*3/5 + 100 &&
-        mouseY >= height*4/5 + 20 && mouseY <= height*4/5 + 50){
-            print("Clicked Replay Button");
-            establishGame(false);
+  if (splash_panel_displayed){
+    if (mouseX >= 20 && mouseX <= 120 &&
+        mouseY >= height*4/5 && mouseY <= height*4/5 + 40){
+            print("Clicked Play Campaign Button");
+            establishGame("new_campaign");
+            splash_panel_displayed = false;
+            campaign_mode = true;
             return;
         }
-    if (mouseX >= width*3/5 && mouseX <= width*3/5 + 100 &&
-        mouseY >= height*4/5 + 70 && mouseY <= height*4/5 + 110){
-            print("Clicked New Game Button");
-            establishGame(true);
+    if (mouseX >= 20 && mouseX <= 120 &&
+        mouseY >= height*4/5 + 60 && mouseY <= height*4/5 + 100){
+            print("Clicked Random Game Button");
+            establishGame("random");
+            splash_panel_displayed = false;
+            campaign_mode = false;
             return;
         }
-  }
-
-  if (splash_panel_displayed) {
-    splash_panel_displayed = false;
+    // Click misses but return anyhow.
     return;
   }
+
+  if (game_over_screen_displayed){
+
+    // Replay button
+    if (mouseX >= width*1/2 && mouseX <= width*1/2 + 100 &&
+        mouseY >= height*4/5 + 10 && mouseY <= height*4/5 + 50){
+            print("Clicked Replay Button");
+            establishGame("replay");
+            return;
+        }
+    // New Game Button
+    if (mouseX >= width*1/2 && mouseX <= width*1/2 + 100 &&
+        mouseY >= height*4/5 + 70 && mouseY <= height*4/5 + 110){
+            print("Clicked New Game Button");
+            establishGame("random");
+            return;
+        }
+
+    // Next Level Button
+    if (campaign_mode){
+      if (mouseX >= width*1/2 + 110 && mouseX <= width*1/2 + 190 &&
+          mouseY >= height*4/5 + 10 && mouseY <= height*4/5 + 110){
+              print("Clicked Next Level Button");
+              establishGame("nextLevel");
+              return;
+          }
+    }
+      //     fill(255);
+      // rect(width*1/2 + 110,height*4/5 + 10,80,100);
+      // fill(0);
+      // textAlign(CENTER);
+      // text("Next\nLevel!",width*1/2 + 150,height*4/5 + 55);
+  }
+
+  // if (splash_panel_displayed) {
+  //   splash_panel_displayed = false;
+  //   return;
+  // }
   // Don't perform anything other than closing the
   // info panel if it is displayed
   if (info_panel_displayed) {
@@ -451,6 +536,9 @@ function mouseDragged() {
 }
 
 function drawUI() {
+  if (splash_panel_displayed || info_panel_displayed){
+    return;
+  }
   // Box around the canvas
   stroke(128);
   noFill();
