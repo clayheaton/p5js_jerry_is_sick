@@ -11,8 +11,8 @@ var mouseJustDragged = false;
 var gameGridWidth = 100;
 var gameGridHeight = 100;
 
-var sectorsWide = 10;
-var sectorsTall = 10;
+var sectorsWide = 7;
+var sectorsTall = 7;
 var sectorDim = 100;
 
 var sectors = [];
@@ -162,7 +162,8 @@ function preload() {
 }
 
 function setup() {
-  var canvas = createCanvas(600, 600);
+  //var canvas = createCanvas(600, 600);
+  var canvas = createCanvas(windowWidth, windowHeight);
   canvas.parent("canvasHolder");
   background("#122B40");
 
@@ -343,8 +344,8 @@ function displaySplashPanel() {
   imageMode(CORNER);
   image(
     img_title,
-    100,
-    height / 2,
+    width - img_title.width*0.4,
+    height - img_title.height*0.4,
     img_title.width * 0.4,
     img_title.height * 0.4
   );
@@ -476,17 +477,8 @@ function mouseClicked() {
               return;
           }
     }
-      //     fill(255);
-      // rect(width*1/2 + 110,height*4/5 + 10,80,100);
-      // fill(0);
-      // textAlign(CENTER);
-      // text("Next\nLevel!",width*1/2 + 150,height*4/5 + 55);
   }
 
-  // if (splash_panel_displayed) {
-  //   splash_panel_displayed = false;
-  //   return;
-  // }
   // Don't perform anything other than closing the
   // info panel if it is displayed
   if (info_panel_displayed) {
