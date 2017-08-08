@@ -11,8 +11,8 @@ var mouseJustDragged = false;
 var gameGridWidth = 100;
 var gameGridHeight = 100;
 
-var sectorsWide = 7;
-var sectorsTall = 7;
+var sectorsWide = 8;
+var sectorsTall = 8;
 var sectorDim = 100;
 
 var sectors = [];
@@ -424,10 +424,11 @@ function drawGameOverUI() {
     }
 }
 
-function mouseClicked() {
+function touchEnded() {
+  // print("mouseClicked()");
     // Ignore clicks out side of the play area.
   if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height){
-      return;
+      return false;
   }
 
   if (splash_panel_displayed){
@@ -437,7 +438,7 @@ function mouseClicked() {
             establishGame("new_campaign");
             splash_panel_displayed = false;
             campaign_mode = true;
-            return;
+            return false;
         }
     if (mouseX >= 20 && mouseX <= 120 &&
         mouseY >= height*4/5 + 60 && mouseY <= height*4/5 + 100){
@@ -445,10 +446,10 @@ function mouseClicked() {
             establishGame("random");
             splash_panel_displayed = false;
             campaign_mode = false;
-            return;
+            return false;
         }
     // Click misses but return anyhow.
-    return;
+    return false;
   }
 
   if (game_over_screen_displayed){
@@ -458,14 +459,14 @@ function mouseClicked() {
         mouseY >= height*4/5 + 10 && mouseY <= height*4/5 + 50){
             print("Clicked Replay Button");
             establishGame("replay");
-            return;
+            return false;
         }
     // New Game Button
     if (mouseX >= width*1/2 && mouseX <= width*1/2 + 100 &&
         mouseY >= height*4/5 + 70 && mouseY <= height*4/5 + 110){
             print("Clicked New Game Button");
             establishGame("random");
-            return;
+            return false;
         }
 
     // Next Level Button
@@ -474,7 +475,7 @@ function mouseClicked() {
           mouseY >= height*4/5 + 10 && mouseY <= height*4/5 + 110){
               print("Clicked Next Level Button");
               establishGame("nextLevel");
-              return;
+              return false;
           }
     }
   }
@@ -483,7 +484,7 @@ function mouseClicked() {
   // info panel if it is displayed
   if (info_panel_displayed) {
     info_panel_displayed = false;
-    return;
+    return false;
   }
   // If a UI button catches the mouse click, return.
   if (intersectsUI(mouseX, mouseY) && !game_over_screen_displayed) {
@@ -492,49 +493,57 @@ function mouseClicked() {
           if (!unlimited_moves){
             if (!selectedSector.limit_symptoms){
                 allActionButtonsCatchMouse();
+                return false;
             } else {
                 // TODO: Refactor into Action Button so that it checks conditions
 
                 // Pass button doesn't have to check conditions.
                 if (passButton.catchesClick(mouseX,mouseY)){
                     passButton.triggerAction();
+                    return false;
                 }
 
                 if (disease.unlimited_cough){
                     if (coughButton.catchesClick(mouseX,mouseY)){
                         coughButton.triggerAction();
+                        return false;
                     }
                 }
                 if (disease.unlimited_sneeze){
                     if (sneezeButton.catchesClick(mouseX,mouseY)){
                         sneezeButton.triggerAction();
+                        return false;
                     }
                 }
                 if (disease.unlimited_spit){
                     if (spitButton.catchesClick(mouseX,mouseY)){
                         spitButton.triggerAction();
+                        return false;
                     }
                 }
                 if (disease.unlimited_vomit){
                     if (vomitButton.catchesClick(mouseX,mouseY)){
                         vomitButton.triggerAction();
+                        return false;
                     }
                 }
             }
           } else {
             allActionButtonsCatchMouse();
+            return false;
           }
 
       } else {
         if (passButton.catchesClick(mouseX, mouseY)) {
           passButton.triggerAction();
+          return false;
         }
       }
     } else {
       if (chooseInfectedButton.catchesClick(mouseX, mouseY)) {
         chooseInfectedButton.triggerAction();
         selected_sector_is_contagious = true;
-        return;
+        return false;
       }
     }
   } else {
@@ -544,12 +553,14 @@ function mouseClicked() {
       print("Selected Sector Status: " + sector_status);
       if (sector_status == "contagious") {
         selected_sector_is_contagious = true;
+        return false;
       } else {
         selected_sector_is_contagious = false;
+        return false;
       }
-      // TODO: If the sector is not contagious, hide the action buttons
     } else {
       mouseJustDragged = false;
+      return false;
     }
   }
 }
@@ -569,9 +580,14 @@ function calculateAdjustedMousePosition() {
 }
 
 // TODO: Figure out why this causes double clicks on non-mobile devices.
-function touchEnded() {
-    mouseClicked();
-}
+// Extract selection logic to a function and call it specifically from here
+// if the selection has not happened. If it has, then defer to mouseClicked()    
+// function touchEnded() {
+//     print("***** in touchEnded()");
+//     print("***** calling mouseClicked() from touchEnded()")
+//     //mouseClicked();
+//     return false;
+// }
 
 
 function mouseDragged() {
