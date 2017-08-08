@@ -168,6 +168,7 @@ function setup() {
   canvas.parent("canvasHolder");
   uiScaleFactor = windowHeight/600;
   uiHeight = Math.floor(uiScaleFactor * uiHeight);
+  sectorDim = sectorDim*uiScaleFactor;
   print("uiHeight: " + uiHeight);
 
   background("#122B40");
@@ -433,7 +434,7 @@ function drawGameOverUI() {
 }
 
 function touchEnded() {
-  // print("mouseClicked()");
+  print("mouse: " + mouseX + ", " + mouseY + " -- adjusted: " + adjustedMouseX + ", " + adjustedMouseY);
     // Ignore clicks out side of the play area.
   if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height){
       return false;
@@ -794,7 +795,7 @@ function Sticker(sticker_image, x, y, sticker_rotation, sticker_scale, decay) {
   this.y = y;
   this.img = sticker_image;
   this.rotation = sticker_rotation;
-  this.scale = sticker_scale;
+  this.scale = sticker_scale*uiScaleFactor;
 
   // Not implemented
   // After how many turns should it disappear?
@@ -1792,7 +1793,7 @@ function Sector(xcoord, ycoord, dimension) {
     push();
     translate(offsetX + this.centerX, offsetY + this.centerY);
     rotate(DIRECTIONS[this.facing]);
-    image(this.img, 0, 0, this.img.width / 2.2, this.img.height / 2.2);
+    image(this.img, 0, 0, this.img.width*uiScaleFactor / 2.2, this.img.height*uiScaleFactor / 2.2);
     pop();
   };
 
@@ -1809,13 +1810,14 @@ function Sector(xcoord, ycoord, dimension) {
       push();
       translate(offsetX, offsetY);
       stroke(0);
-      strokeWeight(1);
+      strokeWeight(1*uiScaleFactor);
       noFill();
       // if (this.rotation_indicator == 1){
       //     stroke("#5BE65D");
       // }
 
       var shortenAngleBy = 25;
+      var arcSize = 15*uiScaleFactor;
 
       if (this.segments_to_rotate < 0) {
         arrowAngle =
@@ -1824,28 +1826,30 @@ function Sector(xcoord, ycoord, dimension) {
         arrowTailAngle =
           Math.PI * 2 * this.rotation_indicator - radians(shortenAngleBy * 2);
 
+        
+
         arc(
           this.x + 10,
           this.y + this.dimension - 10,
-          15,
-          15,
+          arcSize,
+          arcSize,
           0,
           arrowAngle,
           true
         );
 
-        arrowX = this.x + 10 + 15 / 2.0 * Math.cos(arrowAngle);
-        arrowY = this.y + this.dimension - 10 + 15 / 2.0 * Math.sin(arrowAngle);
+        arrowX = this.x + 10 + arcSize / 2.0 * Math.cos(arrowAngle);
+        arrowY = this.y + this.dimension - 10 + arcSize / 2.0 * Math.sin(arrowAngle);
 
-        arrowTail1X = this.x + 10 + 9 * Math.cos(arrowTailAngle);
+        arrowTail1X = this.x + 10 + (9*uiScaleFactor) * Math.cos(arrowTailAngle);
         arrowTail1Y =
-          this.y + this.dimension - 10 + 9 * Math.sin(arrowTailAngle);
+          this.y + this.dimension - 10 + (9*uiScaleFactor) * Math.sin(arrowTailAngle);
 
         line(arrowX, arrowY, arrowTail1X, arrowTail1Y);
 
-        arrowTail2X = this.x + 10 + 6 * Math.cos(arrowTailAngle);
+        arrowTail2X = this.x + 10 + (6*uiScaleFactor) * Math.cos(arrowTailAngle);
         arrowTail2Y =
-          this.y + this.dimension - 10 + 6 * Math.sin(arrowTailAngle);
+          this.y + this.dimension - 10 + (6*uiScaleFactor) * Math.sin(arrowTailAngle);
 
         line(arrowX, arrowY, arrowTail2X, arrowTail2Y);
       } else {
@@ -1859,32 +1863,33 @@ function Sector(xcoord, ycoord, dimension) {
         arc(
           this.x + 10,
           this.y + this.dimension - 10,
-          15,
-          15,
+          arcSize,
+          arcSize,
           -1 * Math.PI * 2 * this.rotation_indicator,
           -radians(shortenAngleBy + 20),
           true
         );
 
-        arrowX = this.x + 10 + 15 / 2.0 * Math.cos(arrowAngle);
-        arrowY = this.y + this.dimension - 10 + 15 / 2.0 * Math.sin(arrowAngle);
+        arrowX = this.x + 10 + (arcSize) / 2.0 * Math.cos(arrowAngle);
+        arrowY = this.y + this.dimension - 10 + arcSize / 2.0 * Math.sin(arrowAngle);
 
         //ellipse(arrowX,arrowY,4,4);
-        arrowTail1X = this.x + 10 + 9 * Math.cos(arrowTailAngle);
+        arrowTail1X = this.x + 10 + (9*uiScaleFactor) * Math.cos(arrowTailAngle);
         arrowTail1Y =
-          this.y + this.dimension - 10 + 9 * Math.sin(arrowTailAngle);
+          this.y + this.dimension - 10 + (9*uiScaleFactor) * Math.sin(arrowTailAngle);
         line(arrowX, arrowY, arrowTail1X, arrowTail1Y);
 
-        arrowTail2X = this.x + 10 + 6 * Math.cos(arrowTailAngle);
+        arrowTail2X = this.x + 10 + (6*uiScaleFactor) * Math.cos(arrowTailAngle);
         arrowTail2Y =
-          this.y + this.dimension - 10 + 6 * Math.sin(arrowTailAngle);
+          this.y + this.dimension - 10 + (6*uiScaleFactor) * Math.sin(arrowTailAngle);
         line(arrowX, arrowY, arrowTail2X, arrowTail2Y);
       }
       // Text shows how frequently the person turns
       noStroke();
       fill(0);
       textAlign(CENTER);
-      text(this.rotation_on_turn, this.x + 10, this.y + this.dimension - 5.5);
+      textSize(11*uiScaleFactor);
+      text(this.rotation_on_turn, this.x + 10, this.y + this.dimension - (5.5));
       pop();
     }
   };
