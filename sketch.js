@@ -17,6 +17,7 @@ var sectorDim = 100;
 
 var sectors = [];
 var uiHeight = 76;
+var uiScaleFactor = 1.0;
 
 var actionButtons = [];
 var vomitButton, coughButton, sneezeButton, spitButton, passButton;
@@ -165,6 +166,10 @@ function setup() {
   //var canvas = createCanvas(600, 600);
   var canvas = createCanvas(windowWidth, windowHeight);
   canvas.parent("canvasHolder");
+  uiScaleFactor = windowHeight/600;
+  uiHeight = Math.floor(uiScaleFactor * uiHeight);
+  print("uiHeight: " + uiHeight);
+
   background("#122B40");
 
   angleMode(RADIANS);
@@ -222,11 +227,13 @@ function establishGame(gameType) {
   // 5 buttons, so determine the layout automatically
   var buttonSpace = width / 5.0;
   var buttonOffset = buttonSpace / 2.0;
+  var buttonSize = Math.floor(50 * uiScaleFactor);
+  print("buttonSize: " + buttonSize);
 
   passButton = new ActionButton(
     (buttonOffset + (0*buttonSpace)),
     height - uiHeight / 2,
-    50,
+    buttonSize,
     100,
     "Pass",
     triggerPass
@@ -234,7 +241,7 @@ function establishGame(gameType) {
   coughButton = new ActionButton(
     (buttonOffset + (1*buttonSpace)),
     height - uiHeight / 2,
-    50,
+    buttonSize,
     "#0088CC",
     "Cough",
     triggerCough
@@ -242,7 +249,7 @@ function establishGame(gameType) {
   sneezeButton = new ActionButton(
     (buttonOffset + (2*buttonSpace)),
     height - uiHeight / 2,
-    50,
+    buttonSize,
     "#56B770",
     "Sneeze",
     triggerSneeze
@@ -250,7 +257,7 @@ function establishGame(gameType) {
   spitButton = new ActionButton(
     (buttonOffset + (3*buttonSpace)),
     height - uiHeight / 2,
-    50,
+    buttonSize,
     "#7C789D",
     "Spit",
     triggerSpit
@@ -258,7 +265,7 @@ function establishGame(gameType) {
   vomitButton = new ActionButton(
     (buttonOffset + (4*buttonSpace)),
     height - uiHeight / 2,
-    50,
+    buttonSize,
     "#E51870",
     "Vomit",
     triggerVomit
@@ -269,7 +276,7 @@ function establishGame(gameType) {
   chooseInfectedButton = new ActionButton(
     width/2,
     height - uiHeight / 2,
-    50,
+    buttonSize,
     "#A61600",
     "Select\nJimmy",
     triggerInfection,
@@ -398,29 +405,30 @@ function drawGameOverUI() {
 
     textAlign(LEFT);
     fill(255);
+    textSize(13*uiScaleFactor);
     text("Game Over!\nTurns: " + turn_count + "\nScore: " + score,20,height*4/5 + 20);
 
     // Works for random or campaign
-    rect(width*1/2,height*4/5 + 10,100,40);
+    rect(width*1/2,height*4/5 + (10*uiScaleFactor),100*uiScaleFactor,40*uiScaleFactor);
     fill(0);
     textAlign(CENTER);
-    text("Replay Level",width*1/2 + 50,height*4/5 + 35);
+    text("Replay Level",width*1/2 + (50*uiScaleFactor),height*4/5 + (35*uiScaleFactor));
 
     // Works for random or campaign
     fill(255);
-    rect(width*1/2,height*4/5 + 70,100,40);
+    rect(width*1/2,height*4/5 + (70*uiScaleFactor),100*uiScaleFactor,40*uiScaleFactor);
     fill(0);
     textAlign(CENTER);
-    text("New Game",width*1/2 + 50,height*4/5 + 95);
+    text("New Game",width*1/2 + (50*uiScaleFactor),height*4/5 + (95*uiScaleFactor));
 
     // For campaign only
     if (campaign_mode){
       // Works for random or campaign
       fill(255);
-      rect(width*1/2 + 110,height*4/5 + 10,80,100);
+      rect(width*1/2 + (110*uiScaleFactor),height*4/5 + (10*uiScaleFactor),80*uiScaleFactor,100*uiScaleFactor);
       fill(0);
       textAlign(CENTER);
-      text("Next\nLevel!",width*1/2 + 150,height*4/5 + 55);
+      text("Next\nLevel!",width*1/2 + (150*uiScaleFactor),height*4/5 + (55*uiScaleFactor));
     }
 }
 
@@ -455,15 +463,15 @@ function touchEnded() {
   if (game_over_screen_displayed){
 
     // Replay button
-    if (mouseX >= width*1/2 && mouseX <= width*1/2 + 100 &&
-        mouseY >= height*4/5 + 10 && mouseY <= height*4/5 + 50){
+    if (mouseX >= width*1/2 && mouseX <= width*1/2 + (100*uiScaleFactor) &&
+        mouseY >= height*4/5 + (10*uiScaleFactor) && mouseY <= height*4/5 + (50*uiScaleFactor)){
             print("Clicked Replay Button");
             establishGame("replay");
             return false;
         }
     // New Game Button
-    if (mouseX >= width*1/2 && mouseX <= width*1/2 + 100 &&
-        mouseY >= height*4/5 + 70 && mouseY <= height*4/5 + 110){
+    if (mouseX >= width*1/2 && mouseX <= width*1/2 + (100*uiScaleFactor) &&
+        mouseY >= height*4/5 + (70*uiScaleFactor) && mouseY <= height*4/5 + (110*uiScaleFactor)){
             print("Clicked New Game Button");
             establishGame("random");
             return false;
@@ -471,8 +479,8 @@ function touchEnded() {
 
     // Next Level Button
     if (campaign_mode){
-      if (mouseX >= width*1/2 + 110 && mouseX <= width*1/2 + 190 &&
-          mouseY >= height*4/5 + 10 && mouseY <= height*4/5 + 110){
+      if (mouseX >= width*1/2 + (110*uiScaleFactor) && mouseX <= width*1/2 + (190*uiScaleFactor) &&
+          mouseY >= height*4/5 + (10*uiScaleFactor) && mouseY <= height*4/5 + (110*uiScaleFactor)){
               print("Clicked Next Level Button");
               establishGame("nextLevel");
               return false;
@@ -617,14 +625,14 @@ function drawUI() {
   rect(1, height - uiHeight - 1, width - 2, uiHeight);
 
   // UI bar at the top for score and turn counters
-  rect(1, 1, width - 2, 20);
+  rect(1, 1, width - 2, 20*uiScaleFactor);
   textAlign(LEFT);
   noStroke();
   fill(0);
-  text("Turn " + turn_count, 10, 15);
+  text("Turn " + turn_count, 10, 15*uiScaleFactor);
 
   textAlign(RIGHT);
-  text("Score " + score, width - 10, 15);
+  text("Score " + score, width - 10, 15*uiScaleFactor);
 
   // Draw the action buttons
   if (infected_chosen) {
@@ -1940,6 +1948,7 @@ function ActionButton(x, y, dim, color, label, actionCallback, textYOffset) {
     fill(255);
     noStroke();
     textAlign(CENTER);
+    textSize(Math.floor(uiScaleFactor*13));
     text(this.label, this.x, this.y + 5 + this.textYOffset);
   };
 }
