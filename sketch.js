@@ -345,31 +345,31 @@ function displaySplashPanel() {
 
   // Blood
   imageMode(CENTER);
-  image(img_blood, width * 0.75, 0);
+  image(img_blood, width * 0.75, 0,img_blood.width*uiScaleFactor,img_blood.height*uiScaleFactor);
 
   // Jimmy
   imageMode(CORNER);
   image(
     img_title,
-    width - img_title.width*0.4,
-    height - img_title.height*0.4,
-    img_title.width * 0.4,
-    img_title.height * 0.4
+    width - img_title.width*0.4*uiScaleFactor,
+    height - img_title.height*0.4*uiScaleFactor,
+    img_title.width * 0.4*uiScaleFactor,
+    img_title.height * 0.4*uiScaleFactor
   );
-  textSize(36);
+  textSize(36*uiScaleFactor);
   textAlign(RIGHT);
   noStroke();
   fill("#fff");
-  text("Jimmy is sick", width - 20, 50);
+  text("Jimmy is sick", width - (20*uiScaleFactor), 50*uiScaleFactor);
 
-  textSize(14);
+  textSize(14*uiScaleFactor);
   textAlign(LEFT);
   noStroke();
   fill("#000");
-  text("Jimmy is waiting at the DMV\nwhen he starts to feel sick.",20,height/1.5);
+  text("Jimmy is waiting at the DMV\nwhen he starts to feel sick.",20,height/1.8);
 
   fill(0);
-  textSize(14);
+  textSize(14*uiScaleFactor);
   // textAlign(LEFT);
   // text("Click to continue.", 10, height - 40);
 
@@ -382,19 +382,19 @@ function displaySplashPanel() {
   // Campaign
   fill(255);
   stroke(0);
-  rect(20,height*4/5,100,40);
+  rect(20*uiScaleFactor,height*4/5,100*uiScaleFactor,40*uiScaleFactor);
   fill(0);
   noStroke();
   textAlign(CENTER);
-  text("Play Campaign",20 + 50,height*4/5 + 25);
+  text("Play Campaign",(20 + 50)*uiScaleFactor,height*4/5 + (25*uiScaleFactor));
 
     // Random
   fill(255);
   stroke(0);
-  rect(20,height*4/5 + 60,100,40);
+  rect(20*uiScaleFactor,height*4/5 + (60*uiScaleFactor),100*uiScaleFactor,40*uiScaleFactor);
   fill(0);
   noStroke();
-  text("Play Random",20 + 50,height*4/5 + 85);
+  text("Play Random",(20 + 50)*uiScaleFactor,height*4/5 + (85*uiScaleFactor));
 
 }
 
@@ -440,16 +440,16 @@ function touchEnded() {
   }
 
   if (splash_panel_displayed){
-    if (mouseX >= 20 && mouseX <= 120 &&
-        mouseY >= height*4/5 && mouseY <= height*4/5 + 40){
+    if (mouseX >= 20*uiScaleFactor && mouseX <= 120*uiScaleFactor &&
+        mouseY >= height*4/5 && mouseY <= height*4/5 + 40*uiScaleFactor){
             print("Clicked Play Campaign Button");
             establishGame("new_campaign");
             splash_panel_displayed = false;
             campaign_mode = true;
             return false;
         }
-    if (mouseX >= 20 && mouseX <= 120 &&
-        mouseY >= height*4/5 + 60 && mouseY <= height*4/5 + 100){
+    if (mouseX >= 20*uiScaleFactor && mouseX <= 120*uiScaleFactor &&
+        mouseY >= height*4/5 + 60*uiScaleFactor && mouseY <= height*4/5 + 100*uiScaleFactor){
             print("Clicked Random Game Button");
             establishGame("random");
             splash_panel_displayed = false;
@@ -677,7 +677,7 @@ function drawAllSymptomButtoms(){
 
 function intersectsUI() {
   // Return boolean if a mouseX and mouseY intersect with the UI
-  if (mouseY > height - uiHeight - 1 || mouseY < 20) {
+  if (mouseY > height - uiHeight - 1 || mouseY < (20*uiScaleFactor)) {
     return true;
   } else {
     return false;
@@ -1109,55 +1109,55 @@ function Disease() {
 
     // Header
     fill(0);
-    textSize(36);
-    text("CDC Report", 10, 50);
+    textSize(36*uiScaleFactor);
+    text("CDC Report", 10*uiScaleFactor, 50*uiScaleFactor);
 
-    textSize(18);
-    text(this.disease_name, 10, 80);
+    textSize(18*uiScaleFactor);
+    text(this.disease_name, 10*uiScaleFactor, 80*uiScaleFactor);
 
     // Incubation
     // TODO: Fix the issue where the incubation period and contagious period
     // don't seem to align with the reality of what the player experiences.
     // This might mean adding an indicator for disease status for the player.
     base_height = 40;
-    textSize(12);
+    textSize(12*uiScaleFactor);
     text(
       "Incubation period: " + (this.days_incubation - 1),
-      10,
-      60 + base_height
+      10*uiScaleFactor,
+      (60 + base_height)*uiScaleFactor
     );
-    text("Contagious period: " + this.days_contagious, 10, 75 + base_height);
+    text("Contagious period: " + this.days_contagious, 10*uiScaleFactor, (75 + base_height)*uiScaleFactor);
     text(
       "Mortality Rate: " + parseInt(this.mortality_rate * 100) + "%",
-      10,
-      90 + base_height
+      10*uiScaleFactor,
+      (90 + base_height)*uiScaleFactor
     );
     text(
       "Deaths exsanguinate: " + this.exanguination_upon_death,
-      10,
-      105 + base_height
+      10*uiScaleFactor,
+      (105 + base_height)*uiScaleFactor
     );
     text(
       "% of population immune: " +
         parseInt(this.percent_pop_immune * 100) +
         "%",
-      10,
-      120 + base_height
+      10*uiScaleFactor,
+      (120 + base_height)*uiScaleFactor
     );
     text(
       "Severity of symptoms: " + parseInt(this.severity * 100) + "/100",
-      10,
-      135 + base_height
+      10*uiScaleFactor,
+      (135 + base_height)*uiScaleFactor
     );
 
     if (this.unlimited_cough) {
-      text("Most common symptom: coughing", 10, 150 + base_height);
+      text("Most common symptom: coughing", 10*uiScaleFactor, (150 + base_height)*uiScaleFactor);
     } else if (this.unlimited_sneeze) {
-      text("Most common symptom: sneezing", 10, 150 + base_height);
+      text("Most common symptom: sneezing", 10*uiScaleFactor, (150 + base_height)*uiScaleFactor);
     } else if (this.unlimited_spit) {
-      text("Most common symptom: phlegm", 10, 150 + base_height);
+      text("Most common symptom: phlegm", 10*uiScaleFactor, (150 + base_height)*uiScaleFactor);
     } else if (this.unlimited_vomit) {
-      text("Most common symptom: nausea", 10, 150 + base_height);
+      text("Most common symptom: nausea", 10*uiScaleFactor, (150 + base_height)*uiScaleFactor);
     }
 
     noFill();
@@ -1165,7 +1165,7 @@ function Disease() {
     line(0, height / 3, width, height / 3);
     noStroke();
     fill(0);
-    textSize(11);
+    textSize(11*uiScaleFactor);
 
     textAlign(RIGHT);
     text(
@@ -1191,7 +1191,7 @@ function Disease() {
         " - Vomit infects the target and primes them to vomit on the first turn\n" +
         "   they are contagious. Use this to create chain vomit reactions!\n\n" +
         "Depending on the disease, some symptoms are more prevalent than others.",
-      10,
+      10*uiScaleFactor,
       height / 2.8
     );
 
@@ -1200,12 +1200,12 @@ function Disease() {
 
     // Show people and explanatory text
     imageMode(CORNER);
-    key_width = img_state_default.width * 0.3;
-    key_height = img_state_default.height * 0.3;
+    key_width = img_state_default.width * 0.3*uiScaleFactor;
+    key_height = img_state_default.height * 0.3*uiScaleFactor;
     key_ypos = height / 1.25;
     key_text_ypos = height / 1.1;
 
-    key_offset = 20;
+    key_offset = 20*uiScaleFactor;
 
     image(img_state_default, key_offset, key_ypos, key_width, key_height);
     text("healthy", key_offset + key_width / 2, key_text_ypos);
@@ -1259,7 +1259,7 @@ function Disease() {
     );
     text("immune", key_offset + key_width * 11 / 2, key_text_ypos);
 
-    textSize(14);
+    textSize(14*uiScaleFactor);
     text("Click to continue...", width / 2, height - 15);
   };
 }
